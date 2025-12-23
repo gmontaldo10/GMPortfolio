@@ -1,0 +1,1209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>The Spirit from the Black Lodge</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --rothko-red: #8a1c26;
+            --rothko-magenta: #5d1828;
+            --rothko-dark: #0f0505;
+            --rothko-orange: #b84b28;
+            --text-color: #f0f0f0;
+            --glass-bg: rgba(20, 5, 8, 0.85);
+            --glass-border: rgba(255, 200, 200, 0.15);
+            --highlight: #ffcc00;
+            --font-cinematic: 'Cinzel', serif;
+            --font-body: 'Lato', sans-serif;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: var(--rothko-dark);
+            color: var(--text-color);
+            font-family: var(--font-body);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* --- Background Image --- */
+        .bg-image {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -2;
+            background-image: url('https://image.tmdb.org/t/p/original/p1O3eE3R5r7gq4pY5Q2Q4l4l4l.jpg');
+            background: radial-gradient(circle at center, #4a0e16 0%, #0f0505 100%);
+            background-size: cover;
+            background-position: center;
+        }
+
+        /* --- Cinema Curtain Effect --- */
+        .curtain-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 100;
+            display: flex;
+            pointer-events: none;
+        }
+
+        .curtain-panel {
+            width: 50%;
+            height: 100%;
+            background: linear-gradient(90deg, #2a050a 0%, #6e1628 50%, #2a050a 100%);
+            position: relative;
+            transition: transform 1.8s cubic-bezier(0.77, 0, 0.175, 1);
+            box-shadow: inset -10px 0 50px rgba(0,0,0,0.9);
+        }
+
+        .curtain-panel::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: repeating-linear-gradient(90deg, transparent 0, transparent 40px, rgba(0,0,0,0.4) 40px, rgba(0,0,0,0.4) 80px);
+            opacity: 0.6;
+        }
+
+        .curtain-left { transform: translateX(0); border-right: 2px solid rgba(0,0,0,0.5); }
+        .curtain-right { transform: translateX(0); border-left: 2px solid rgba(0,0,0,0.5); }
+
+        .curtain-container.open .curtain-left { transform: translateX(-100%); }
+        .curtain-container.open .curtain-right { transform: translateX(100%); }
+
+        /* --- App Container --- */
+        .app-container {
+            width: 100%;
+            max-width: 500px;
+            height: 100vh;
+            max-height: 850px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            box-shadow: 0 40px 80px rgba(0, 0, 0, 0.9);
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        @media (min-width: 600px) {
+            .app-container {
+                height: 85vh;
+                border-radius: 8px;
+                width: 90%;
+            }
+        }
+
+        /* --- Screens --- */
+        .screen {
+            display: none;
+            flex-direction: column;
+            flex: 1;
+            padding: 30px;
+            animation: fadeIn 1.2s ease forwards;
+            height: 100%;
+            /* Changed to allow scrolling on small screens with multiple filters */
+            overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(255,255,255,0.2) transparent;
+        }
+
+        .screen.active {
+            display: flex;
+        }
+
+        .screen::-webkit-scrollbar {
+            width: 4px;
+        }
+        .screen::-webkit-scrollbar-thumb {
+            background: rgba(255,255,255,0.2);
+            border-radius: 2px;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.98); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        /* --- Typography --- */
+        h1 {
+            font-family: var(--font-cinematic);
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-align: center;
+            font-size: 1.6rem;
+            text-transform: uppercase;
+            color: #e0e0e0;
+            margin-bottom: 5px;
+            text-shadow: 0 4px 20px rgba(0,0,0,0.8);
+            line-height: 1.2;
+            flex-shrink: 0;
+        }
+
+        h2 {
+            font-family: var(--font-body);
+            font-weight: 300;
+            text-align: center;
+            font-size: 0.85rem;
+            margin-bottom: 20px;
+            color: rgba(255,255,255,0.6);
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            flex-shrink: 0;
+        }
+
+        /* --- Start Screen --- */
+        .start-content {
+            z-index: 101;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            transition: opacity 0.8s ease;
+            background: radial-gradient(circle, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.8) 100%);
+        }
+        
+        .start-content.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .title-cinematic {
+            font-family: var(--font-cinematic);
+            font-size: 2.5rem; 
+            text-align: center;
+            color: #dcdcdc;
+            text-shadow: 0 0 20px rgba(255,255,255,0.2);
+            animation: textTracking 4s ease-out forwards;
+            padding: 0 20px;
+            margin-bottom: 40px;
+        }
+
+        @keyframes textTracking {
+            0% { letter-spacing: 1px; opacity: 0; transform: translateY(10px); }
+            100% { letter-spacing: 6px; opacity: 1; transform: translateY(0); }
+        }
+
+        .start-btn {
+            background: transparent;
+            border: 1px solid rgba(255,255,255,0.3);
+            color: #fff;
+            padding: 18px 50px;
+            font-family: var(--font-cinematic);
+            font-size: 1rem;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all 0.5s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .start-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: 0.5s;
+        }
+
+        .start-btn:hover {
+            border-color: #fff;
+            box-shadow: 0 0 30px rgba(255,255,255,0.15);
+            background: rgba(255,255,255,0.05);
+        }
+
+        .start-btn:hover::before {
+            left: 100%;
+        }
+
+        /* --- Form Elements --- */
+        .input-group {
+            margin-bottom: 20px;
+            width: 100%;
+            flex-shrink: 0;
+        }
+
+        .input-label {
+            display: block;
+            margin-bottom: 10px;
+            font-size: 0.7rem;
+            letter-spacing: 3px;
+            color: var(--rothko-orange);
+            text-transform: uppercase;
+            text-align: center;
+            font-weight: 700;
+        }
+
+        .options-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+        
+        .options-row {
+            display: flex;
+            gap: 10px;
+        }
+
+        /* Hide default inputs */
+        input[type="radio"], input[type="checkbox"] {
+            display: none;
+        }
+
+        .option-btn {
+            padding: 12px 6px;
+            background: rgba(0,0,0,0.3);
+            border: 1px solid rgba(255,255,255,0.1);
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 0.75rem;
+            color: rgba(255,255,255,0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+        }
+
+        .option-btn:hover {
+            background: rgba(255,255,255,0.05);
+        }
+
+        /* Selected State for Radio & Checkbox */
+        input[type="radio"]:checked + .option-btn,
+        input[type="checkbox"]:checked + .option-btn {
+            background: var(--rothko-magenta);
+            border-color: var(--rothko-orange);
+            color: white;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            font-weight: 700;
+        }
+
+        .discover-btn {
+            margin-top: 10px;
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, #7e1e38 0%, #3e0c15 100%);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: white;
+            font-family: var(--font-cinematic);
+            font-size: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 4px;
+            cursor: pointer;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+            border-radius: 4px;
+            transition: transform 0.2s, box-shadow 0.2s;
+            flex-shrink: 0;
+            margin-bottom: 20px;
+        }
+
+        .discover-btn:active {
+            transform: scale(0.98);
+        }
+
+        /* --- Results Screen --- */
+        .results-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            flex-shrink: 0;
+        }
+
+        .header-title {
+            font-family: var(--font-cinematic);
+            font-size: 0.9rem;
+            color: var(--rothko-orange);
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .more-btn-header {
+            background: transparent;
+            border: 1px solid rgba(255,255,255,0.3);
+            color: rgba(255,255,255,0.9);
+            cursor: pointer;
+            font-size: 0.7rem;
+            padding: 6px 14px;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .more-btn-header:active {
+            transform: scale(0.95);
+            background: rgba(255,255,255,0.1);
+        }
+
+        .results-list {
+            list-style: none;
+            flex-grow: 1;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            padding-right: 5px;
+            margin-bottom: 20px;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(255,255,255,0.2) transparent;
+        }
+
+        .results-list::-webkit-scrollbar {
+            width: 4px;
+        }
+        .results-list::-webkit-scrollbar-thumb {
+            background: rgba(255,255,255,0.2);
+            border-radius: 2px;
+        }
+
+        .result-item {
+            display: flex;
+            flex-direction: column;
+            padding: 14px 10px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            cursor: default;
+            color: rgba(255,255,255,0.9);
+            transition: background 0.2s;
+        }
+        
+        .result-item:last-child {
+            border-bottom: none;
+        }
+
+        .result-item:hover, .result-item:active {
+            background: rgba(255,255,255,0.08);
+        }
+
+        .item-main {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+        }
+
+        .item-left {
+            display: flex;
+            align-items: baseline;
+            gap: 12px;
+            overflow: hidden;
+            flex: 1;
+        }
+
+        .item-rank {
+            font-family: var(--font-cinematic);
+            font-size: 0.9rem;
+            color: var(--rothko-orange);
+            min-width: 25px;
+        }
+
+        .item-title-link {
+            font-size: 1rem;
+            font-weight: 400;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            color: rgba(255,255,255,0.9);
+            text-decoration: none;
+            transition: color 0.2s;
+            cursor: pointer;
+        }
+        
+        .item-title-link:hover {
+            color: var(--highlight);
+        }
+
+        .item-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-left: 10px;
+        }
+
+        .item-country {
+            font-size: 0.7rem;
+            color: rgba(255,255,255,0.4);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            white-space: nowrap;
+        }
+
+        .tv-icon {
+            color: rgba(255,255,255,0.5);
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.9rem;
+            padding: 5px;
+        }
+
+        .tv-icon:hover {
+            color: var(--highlight);
+            transform: scale(1.1);
+        }
+
+        .item-director {
+            font-size: 0.75rem;
+            color: rgba(255,255,255,0.5);
+            margin-top: 4px;
+            margin-left: 37px; /* Align with title */
+            font-style: italic;
+        }
+
+        .footer-buttons {
+            display: flex;
+            gap: 10px;
+            flex-shrink: 0;
+            margin-top: auto;
+        }
+
+        .action-btn {
+            width: 100%;
+            padding: 16px;
+            background: rgba(0,0,0,0.4);
+            border: 1px solid rgba(255,255,255,0.2);
+            color: rgba(255,255,255,0.9);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: background 0.2s;
+            font-family: var(--font-cinematic);
+        }
+
+        .action-btn:active, .action-btn:hover {
+            background: rgba(255,255,255,0.15);
+            color: white;
+            border-color: white;
+        }
+
+        .error-msg {
+            color: #ff8a8a;
+            text-align: center;
+            margin-top: 10px;
+            min-height: 20px;
+            font-size: 0.85rem;
+        }
+
+        @media (max-width: 600px) {
+            .title-cinematic { font-size: 1.8rem; padding: 0 10px; }
+            .item-title-link { font-size: 0.95rem; }
+            .screen { padding: 20px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="bg-image"></div>
+
+    <div class="curtain-container" id="curtain">
+        <div class="curtain-panel curtain-left"></div>
+        <div class="curtain-panel curtain-right"></div>
+    </div>
+
+    <div class="start-content" id="start-content">
+        <div class="title-cinematic">A Spirit from the<br>Black Lodge</div>
+        <button class="start-btn" onclick="openCurtain()">Enter</button>
+    </div>
+
+    <div class="app-container">
+        
+        <!-- SCREEN 1: FILTERS -->
+        <div id="selection-screen" class="screen">
+            <h1>A Spirit from the<br>Black Lodge</h1>
+            <h2>High-rated title engine</h2>
+            
+            <div class="input-group">
+                <span class="input-label">Format</span>
+                <div class="options-row">
+                    <label style="flex:1">
+                        <input type="radio" name="type" value="Movie" checked>
+                        <div class="option-btn">Movies</div>
+                    </label>
+                    <label style="flex:1">
+                        <input type="radio" name="type" value="Series">
+                        <div class="option-btn">Series</div>
+                    </label>
+                </div>
+            </div>
+
+            <div class="input-group">
+                <span class="input-label">Genre (Select Multiple)</span>
+                <div class="options-grid">
+                    <label>
+                        <input type="checkbox" name="genre" value="Drama" checked>
+                        <div class="option-btn">Drama</div>
+                    </label>
+                    <label>
+                        <input type="checkbox" name="genre" value="Comedy" checked>
+                        <div class="option-btn">Comedy</div>
+                    </label>
+                    <label>
+                        <input type="checkbox" name="genre" value="Action" checked>
+                        <div class="option-btn">Action</div>
+                    </label>
+                    <label>
+                        <input type="checkbox" name="genre" value="Thriller" checked>
+                        <div class="option-btn">Thriller</div>
+                    </label>
+                </div>
+            </div>
+
+            <div class="input-group">
+                <span class="input-label">Origin (Select Multiple)</span>
+                <div class="options-grid">
+                    <label>
+                        <input type="checkbox" name="origin" value="US" checked>
+                        <div class="option-btn">US</div>
+                    </label>
+                    <label>
+                        <input type="checkbox" name="origin" value="Europe">
+                        <div class="option-btn">Europe</div>
+                    </label>
+                    <label>
+                        <input type="checkbox" name="origin" value="AsiaAfrica">
+                        <div class="option-btn">Asia & Africa</div>
+                    </label>
+                    <label>
+                        <input type="checkbox" name="origin" value="LatAm">
+                        <div class="option-btn">LatAm & Brazil</div>
+                    </label>
+                </div>
+            </div>
+
+            <div class="error-msg" id="error-msg"></div>
+
+            <button class="discover-btn" onclick="discoverContent()">
+                Discover
+            </button>
+        </div>
+
+        <!-- SCREEN 2: RESULTS -->
+        <div id="results-screen" class="screen">
+            <div class="results-header">
+                <span class="header-title" id="filter-summary">Results</span>
+                <button class="more-btn-header" onclick="loadMoreResults()">
+                    <i class="fa-solid fa-forward"></i> More
+                </button>
+            </div>
+            
+            <ul class="results-list" id="results-list">
+                <!-- Results injected here -->
+            </ul>
+
+            <div class="footer-buttons">
+                <button class="action-btn" onclick="resetApp()">Return</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Data format: t=title, s=score, y=type(M/S), o=origin, i=id, c=country, d=director, g=genres[], yr=year
+        const db = [
+            // --- US MOVIES ---
+            {t:"The Godfather",s:9.2,y:"M",o:"US",i:"tt0068646",c:"USA",d:"F.F. Coppola",g:["Drama"],yr:1972},
+            {t:"The Shawshank Redemption",s:9.3,y:"M",o:"US",i:"tt0111161",c:"USA",d:"F. Darabont",g:["Drama"],yr:1994},
+            {t:"The Dark Knight",s:9.0,y:"M",o:"US",i:"tt0468569",c:"USA",d:"C. Nolan",g:["Action","Thriller"],yr:2008},
+            {t:"Pulp Fiction",s:8.9,y:"M",o:"US",i:"tt0110912",c:"USA",d:"Q. Tarantino",g:["Drama","Thriller"],yr:1994},
+            {t:"Forrest Gump",s:8.8,y:"M",o:"US",i:"tt0109830",c:"USA",d:"R. Zemeckis",g:["Drama","Comedy"],yr:1994},
+            {t:"Inception",s:8.8,y:"M",o:"US",i:"tt1375666",c:"USA",d:"C. Nolan",g:["Action","Thriller"],yr:2010},
+            {t:"Fight Club",s:8.8,y:"M",o:"US",i:"tt0137523",c:"USA",d:"D. Fincher",g:["Drama","Thriller"],yr:1999},
+            {t:"The Matrix",s:8.7,y:"M",o:"US",i:"tt0133093",c:"USA",d:"L. & L. Wachowski",g:["Action"],yr:1999},
+            {t:"Goodfellas",s:8.7,y:"M",o:"US",i:"tt0099685",c:"USA",d:"M. Scorsese",g:["Drama","Thriller"],yr:1990},
+            {t:"Interstellar",s:8.7,y:"M",o:"US",i:"tt0816692",c:"USA",d:"C. Nolan",g:["Drama","Action"],yr:2014},
+            {t:"One Flew Over the Cuckoo's Nest",s:8.7,y:"M",o:"US",i:"tt0073486",c:"USA",d:"M. Forman",g:["Drama"],yr:1975},
+            {t:"Se7en",s:8.6,y:"M",o:"US",i:"tt0114369",c:"USA",d:"D. Fincher",g:["Thriller","Drama"],yr:1995},
+            {t:"Silence of the Lambs",s:8.6,y:"M",o:"US",i:"tt0102926",c:"USA",d:"J. Demme",g:["Thriller","Drama"],yr:1991},
+            {t:"Saving Private Ryan",s:8.6,y:"M",o:"US",i:"tt0120815",c:"USA",d:"S. Spielberg",g:["Drama","Action"],yr:1998},
+            {t:"The Green Mile",s:8.6,y:"M",o:"US",i:"tt0120689",c:"USA",d:"F. Darabont",g:["Drama"],yr:1999},
+            {t:"Terminator 2",s:8.6,y:"M",o:"US",i:"tt0103064",c:"USA",d:"J. Cameron",g:["Action","Thriller"],yr:1991},
+            {t:"Back to the Future",s:8.5,y:"M",o:"US",i:"tt0088763",c:"USA",d:"R. Zemeckis",g:["Comedy","Action"],yr:1985},
+            {t:"Whiplash",s:8.5,y:"M",o:"US",i:"tt2582802",c:"USA",d:"D. Chazelle",g:["Drama"],yr:2014},
+            {t:"Gladiator",s:8.5,y:"M",o:"US",i:"tt0172495",c:"USA",d:"R. Scott",g:["Action","Drama"],yr:2000},
+            {t:"The Prestige",s:8.5,y:"M",o:"US",i:"tt0482571",c:"USA",d:"C. Nolan",g:["Drama","Thriller"],yr:2006},
+            {t:"The Departed",s:8.5,y:"M",o:"US",i:"tt0407887",c:"USA",d:"M. Scorsese",g:["Thriller","Drama"],yr:2006},
+            {t:"American History X",s:8.5,y:"M",o:"US",i:"tt0120586",c:"USA",d:"T. Kaye",g:["Drama"],yr:1998},
+            {t:"Psycho",s:8.5,y:"M",o:"US",i:"tt0054215",c:"USA",d:"A. Hitchcock",g:["Thriller","Horror"],yr:1960},
+            {t:"Casablanca",s:8.5,y:"M",o:"US",i:"tt0034583",c:"USA",d:"M. Curtiz",g:["Drama"],yr:1942},
+            {t:"Rear Window",s:8.5,y:"M",o:"US",i:"tt0047396",c:"USA",d:"A. Hitchcock",g:["Thriller"],yr:1954},
+            {t:"Sunset Blvd.",s:8.4,y:"M",o:"US",i:"tt0043014",c:"USA",d:"B. Wilder",g:["Drama"],yr:1950},
+            {t:"Apocalypse Now",s:8.5,y:"M",o:"US",i:"tt0078788",c:"USA",d:"F.F. Coppola",g:["Drama","Action"],yr:1979},
+            {t:"Alien",s:8.5,y:"M",o:"US",i:"tt0078748",c:"USA",d:"R. Scott",g:["Thriller","Action"],yr:1979},
+            {t:"Memento",s:8.4,y:"M",o:"US",i:"tt0209144",c:"USA",d:"C. Nolan",g:["Thriller"],yr:2000},
+            {t:"Raiders of the Lost Ark",s:8.4,y:"M",o:"US",i:"tt0082971",c:"USA",d:"S. Spielberg",g:["Action"],yr:1981},
+            {t:"Django Unchained",s:8.4,y:"M",o:"US",i:"tt1853728",c:"USA",d:"Q. Tarantino",g:["Drama","Action"],yr:2012},
+            {t:"Spider-Man: Into the Spider-Verse",s:8.4,y:"M",o:"US",i:"tt4633694",c:"USA",d:"Persichetti/Ramsey",g:["Action","Comedy"],yr:2018},
+            {t:"Avengers: Endgame",s:8.4,y:"M",o:"US",i:"tt4154796",c:"USA",d:"Russo Bros",g:["Action"],yr:2019},
+            {t:"Joker",s:8.4,y:"M",o:"US",i:"tt7286456",c:"USA",d:"T. Phillips",g:["Drama","Thriller"],yr:2019},
+            {t:"Oppenheimer",s:8.3,y:"M",o:"US",i:"tt15398776",c:"USA",d:"C. Nolan",g:["Drama"],yr:2023},
+            {t:"Eternal Sunshine",s:8.3,y:"M",o:"US",i:"tt0338013",c:"USA",d:"M. Gondry",g:["Drama","Comedy"],yr:2004},
+            {t:"Reservoir Dogs",s:8.3,y:"M",o:"US",i:"tt0105236",c:"USA",d:"Q. Tarantino",g:["Thriller","Drama"],yr:1992},
+            {t:"Toy Story",s:8.3,y:"M",o:"US",i:"tt0114709",c:"USA",d:"J. Lasseter",g:["Comedy","Adventure"],yr:1995},
+            {t:"Inglourious Basterds",s:8.4,y:"M",o:"US",i:"tt0361748",c:"USA",d:"Q. Tarantino",g:["Action","Drama"],yr:2009},
+            {t:"Good Will Hunting",s:8.3,y:"M",o:"US",i:"tt0119217",c:"USA",d:"G. Van Sant",g:["Drama"],yr:1997},
+            {t:"There Will Be Blood",s:8.2,y:"M",o:"US",i:"tt0469494",c:"USA",d:"P.T. Anderson",g:["Drama"],yr:2007},
+            {t:"No Country for Old Men",s:8.2,y:"M",o:"US",i:"tt0477348",c:"USA",d:"Coen Bros",g:["Drama","Thriller"],yr:2007},
+            {t:"The Thing",s:8.2,y:"M",o:"US",i:"tt0084787",c:"USA",d:"J. Carpenter",g:["Thriller","Horror"],yr:1982},
+            {t:"Heat",s:8.3,y:"M",o:"US",i:"tt0113277",c:"USA",d:"M. Mann",g:["Action","Thriller"],yr:1995},
+            {t:"Scarface",s:8.3,y:"M",o:"US",i:"tt0086250",c:"USA",d:"B. De Palma",g:["Drama","Thriller"],yr:1983},
+            {t:"Taxi Driver",s:8.2,y:"M",o:"US",i:"tt0075314",c:"USA",d:"M. Scorsese",g:["Drama","Thriller"],yr:1976},
+            {t:"L.A. Confidential",s:8.2,y:"M",o:"US",i:"tt0119488",c:"USA",d:"C. Hanson",g:["Thriller","Drama"],yr:1997},
+            {t:"Die Hard",s:8.2,y:"M",o:"US",i:"tt0095016",c:"USA",d:"J. McTiernan",g:["Action","Thriller"],yr:1988},
+            {t:"Blade Runner",s:8.1,y:"M",o:"US",i:"tt0083658",c:"USA",d:"R. Scott",g:["Action","Thriller"],yr:1982},
+            {t:"Blade Runner 2049",s:8.0,y:"M",o:"US",i:"tt1856101",c:"USA",d:"D. Villeneuve",g:["Action","Drama"],yr:2017},
+            {t:"Green Book",s:8.2,y:"M",o:"US",i:"tt6966692",c:"USA",d:"P. Farrelly",g:["Drama","Comedy"],yr:2018},
+            {t:"The Help",s:8.1,y:"M",o:"US",i:"tt1454029",c:"USA",d:"T. Taylor",g:["Drama"],yr:2011},
+            {t:"Prisoners",s:8.1,y:"M",o:"US",i:"tt1392214",c:"USA",d:"D. Villeneuve",g:["Thriller","Drama"],yr:2013},
+            {t:"The Grand Budapest Hotel",s:8.1,y:"M",o:"US",i:"tt2278388",c:"USA",d:"W. Anderson",g:["Comedy","Drama"],yr:2014},
+            {t:"Spotlight",s:8.1,y:"M",o:"US",i:"tt1895587",c:"USA",d:"T. McCarthy",g:["Drama"],yr:2015},
+            {t:"Her",s:8.0,y:"M",o:"US",i:"tt1798709",c:"USA",d:"S. Jonze",g:["Drama","Romance"],yr:2013},
+            {t:"Gone Girl",s:8.1,y:"M",o:"US",i:"tt2267998",c:"USA",d:"D. Fincher",g:["Thriller","Drama"],yr:2014},
+
+            // --- US SERIES ---
+            {t:"Breaking Bad",s:9.5,y:"S",o:"US",i:"tt0903747",c:"USA",d:"V. Gilligan",g:["Drama","Thriller"],yr:2008},
+            {t:"The Wire",s:9.3,y:"S",o:"US",i:"tt0306414",c:"USA",d:"D. Simon",g:["Drama","Thriller"],yr:2002},
+            {t:"The Sopranos",s:9.2,y:"S",o:"US",i:"tt0141842",c:"USA",d:"D. Chase",g:["Drama"],yr:1999},
+            {t:"Game of Thrones",s:9.2,y:"S",o:"US",i:"tt0944947",c:"USA",d:"Benioff/Weiss",g:["Action","Drama"],yr:2011},
+            {t:"Band of Brothers",s:9.4,y:"S",o:"US",i:"tt0185906",c:"USA",d:"Hanks/Spielberg",g:["Drama","Action"],yr:2001},
+            {t:"Chernobyl",s:9.3,y:"S",o:"US",i:"tt8111088",c:"USA",d:"C. Mazin",g:["Drama","Thriller"],yr:2019},
+            {t:"Avatar: The Last Airbender",s:9.3,y:"S",o:"US",i:"tt0417299",c:"USA",d:"DiMartino/Konietzko",g:["Action","Comedy"],yr:2005},
+            {t:"Rick and Morty",s:9.1,y:"S",o:"US",i:"tt2861424",c:"USA",d:"Harmon/Roiland",g:["Comedy","Action"],yr:2013},
+            {t:"The Twilight Zone",s:9.1,y:"S",o:"US",i:"tt0052520",c:"USA",d:"R. Serling",g:["Drama","Thriller"],yr:1959},
+            {t:"Better Call Saul",s:9.0,y:"S",o:"US",i:"tt3032476",c:"USA",d:"Gilligan/Gould",g:["Drama","Comedy"],yr:2015},
+            {t:"The Office",s:9.0,y:"S",o:"US",i:"tt0386676",c:"USA",d:"G. Daniels",g:["Comedy"],yr:2005},
+            {t:"Batman: TAS",s:9.0,y:"S",o:"US",i:"tt0103359",c:"USA",d:"Timm/Radomski",g:["Action","Thriller"],yr:1992},
+            {t:"True Detective",s:8.9,y:"S",o:"US",i:"tt2356777",c:"USA",d:"N. Pizzolatto",g:["Drama","Thriller"],yr:2014},
+            {t:"Fargo",s:8.9,y:"S",o:"US",i:"tt2802850",c:"USA",d:"N. Hawley",g:["Drama","Thriller"],yr:2014},
+            {t:"Seinfeld",s:8.9,y:"S",o:"US",i:"tt0096697",c:"USA",d:"David/Seinfeld",g:["Comedy"],yr:1989},
+            {t:"Succession",s:8.8,y:"S",o:"US",i:"tt7660850",c:"USA",d:"J. Armstrong",g:["Drama","Comedy"],yr:2018},
+            {t:"Friends",s:8.9,y:"S",o:"US",i:"tt0108778",c:"USA",d:"Crane/Kauffman",g:["Comedy"],yr:1994},
+            {t:"Twin Peaks",s:8.8,y:"S",o:"US",i:"tt0098936",c:"USA",d:"D. Lynch",g:["Drama","Thriller"],yr:1990},
+            {t:"Stranger Things",s:8.7,y:"S",o:"US",i:"tt4574334",c:"USA",d:"Duffer Bros",g:["Drama","Thriller"],yr:2016},
+            {t:"The Boys",s:8.7,y:"S",o:"US",i:"tt1190634",c:"USA",d:"E. Kripke",g:["Action","Comedy"],yr:2019},
+            {t:"House of Cards",s:8.6,y:"S",o:"US",i:"tt1856010",c:"USA",d:"B. Willimon",g:["Drama","Thriller"],yr:2013},
+            {t:"Mindhunter",s:8.6,y:"S",o:"US",i:"tt5290382",c:"USA",d:"J. Penhall",g:["Thriller","Drama"],yr:2017},
+            {t:"Severance",s:8.7,y:"S",o:"US",i:"tt11280740",c:"USA",d:"D. Erickson",g:["Thriller","Drama"],yr:2022},
+            {t:"The Bear",s:8.6,y:"S",o:"US",i:"tt14452776",c:"USA",d:"C. Storer",g:["Drama","Comedy"],yr:2022},
+            {t:"Arrested Development",s:8.7,y:"S",o:"US",i:"tt0367279",c:"USA",d:"M. Hurwitz",g:["Comedy"],yr:2003},
+            {t:"Six Feet Under",s:8.7,y:"S",o:"US",i:"tt0248654",c:"USA",d:"A. Ball",g:["Drama","Comedy"],yr:2001},
+            {t:"Mad Men",s:8.7,y:"S",o:"US",i:"tt0804503",c:"USA",d:"M. Weiner",g:["Drama"],yr:2007},
+            {t:"BoJack Horseman",s:8.8,y:"S",o:"US",i:"tt5218228",c:"USA",d:"R. Bob-Waksberg",g:["Comedy","Drama"],yr:2014},
+            {t:"South Park",s:8.7,y:"S",o:"US",i:"tt0121955",c:"USA",d:"Parker/Stone",g:["Comedy"],yr:1997},
+            {t:"It's Always Sunny",s:8.8,y:"S",o:"US",i:"tt0472954",c:"USA",d:"R. McElhenney",g:["Comedy"],yr:2005},
+            {t:"Westworld",s:8.5,y:"S",o:"US",i:"tt0475784",c:"USA",d:"Nolan/Joy",g:["Action","Drama"],yr:2016},
+            {t:"The Mandalorian",s:8.7,y:"S",o:"US",i:"tt8111088",c:"USA",d:"J. Favreau",g:["Action","Adventure"],yr:2019},
+            {t:"Invincible",s:8.7,y:"S",o:"US",i:"tt6741278",c:"USA",d:"R. Kirkman",g:["Action","Drama"],yr:2021},
+            {t:"Ted Lasso",s:8.8,y:"S",o:"US",i:"tt10986410",c:"USA",d:"Sudeikis/Lawrence",g:["Comedy","Drama"],yr:2020},
+            {t:"The Last of Us",s:8.7,y:"S",o:"US",i:"tt3581920",c:"USA",d:"Mazin/Druckmann",g:["Drama","Action"],yr:2023},
+            {t:"Dexter",s:8.6,y:"S",o:"US",i:"tt0773262",c:"USA",d:"J. Manos Jr.",g:["Drama","Thriller"],yr:2006},
+            {t:"The X-Files",s:8.6,y:"S",o:"US",i:"tt0106179",c:"USA",d:"C. Carter",g:["Thriller","Drama"],yr:1993},
+            {t:"Deadwood",s:8.6,y:"S",o:"US",i:"tt0348914",c:"USA",d:"D. Milch",g:["Drama"],yr:2004},
+            {t:"Mr. Robot",s:8.5,y:"S",o:"US",i:"tt4158110",c:"USA",d:"S. Esmail",g:["Drama","Thriller"],yr:2015},
+            {t:"Silicon Valley",s:8.5,y:"S",o:"US",i:"tt2575988",c:"USA",d:"Judge/Altschuler",g:["Comedy"],yr:2014},
+            {t:"Yellowstone",s:8.7,y:"S",o:"US",i:"tt4236770",c:"USA",d:"T. Sheridan",g:["Drama"],yr:2018},
+            {t:"The Shield",s:8.7,y:"S",o:"US",i:"tt0286486",c:"USA",d:"S. Ryan",g:["Drama","Thriller"],yr:2002},
+            {t:"Justified",s:8.6,y:"S",o:"US",i:"tt1489428",c:"USA",d:"G. Yost",g:["Action","Drama"],yr:2010},
+            {t:"House M.D.",s:8.7,y:"S",o:"US",i:"tt0412142",c:"USA",d:"D. Shore",g:["Drama"],yr:2004},
+            {t:"Hannibal",s:8.5,y:"S",o:"US",i:"tt2243973",c:"USA",d:"B. Fuller",g:["Drama","Thriller"],yr:2013},
+            {t:"Daredevil",s:8.6,y:"S",o:"US",i:"tt3322312",c:"USA",d:"D. Goddard",g:["Action","Drama"],yr:2015},
+            {t:"The Punisher",s:8.5,y:"S",o:"US",i:"tt5675620",c:"USA",d:"S. Lightfoot",g:["Action","Drama"],yr:2017},
+
+            // --- EUROPE MOVIES ---
+            {t:"Life is Beautiful",s:8.6,y:"M",o:"Europe",i:"tt0118799",c:"Italy",d:"R. Benigni",g:["Comedy","Drama"],yr:1997},
+            {t:"The Intouchables",s:8.5,y:"M",o:"Europe",i:"tt1675434",c:"France",d:"Nakache/Toledano",g:["Comedy","Drama"],yr:2011},
+            {t:"The Pianist",s:8.5,y:"M",o:"Europe",i:"tt0253474",c:"Pol/Fr",d:"R. Polanski",g:["Drama"],yr:2002},
+            {t:"Cinema Paradiso",s:8.5,y:"M",o:"Europe",i:"tt0095765",c:"Italy",d:"G. Tornatore",g:["Drama"],yr:1988},
+            {t:"The Lives of Others",s:8.4,y:"M",o:"Europe",i:"tt0405094",c:"Germany",d:"F. H. von Donnersmarck",g:["Drama","Thriller"],yr:2006},
+            {t:"Das Boot",s:8.4,y:"M",o:"Europe",i:"tt0082096",c:"Germany",d:"W. Petersen",g:["Drama","Thriller"],yr:1981},
+            {t:"Amélie",s:8.3,y:"M",o:"Europe",i:"tt0211915",c:"France",d:"J. Jeunet",g:["Comedy","Romance"],yr:2001},
+            {t:"The Hunt",s:8.3,y:"M",o:"Europe",i:"tt2106476",c:"Denmark",d:"T. Vinterberg",g:["Drama"],yr:2012},
+            {t:"Metropolis",s:8.3,y:"M",o:"Europe",i:"tt0017136",c:"Germany",d:"F. Lang",g:["Drama","Thriller"],yr:1927},
+            {t:"A Clockwork Orange",s:8.3,y:"M",o:"Europe",i:"tt0066921",c:"UK",d:"S. Kubrick",g:["Drama","Thriller"],yr:1971},
+            {t:"Downfall",s:8.2,y:"M",o:"Europe",i:"tt0363163",c:"Germany",d:"O. Hirschbiegel",g:["Drama"],yr:2004},
+            {t:"The Seventh Seal",s:8.1,y:"M",o:"Europe",i:"tt0050976",c:"Sweden",d:"I. Bergman",g:["Drama"],yr:1957},
+            {t:"Portrait of a Lady on Fire",s:8.1,y:"M",o:"Europe",i:"tt8613070",c:"France",d:"C. Sciamma",g:["Drama","Romance"],yr:2019},
+            {t:"Anatomy of a Fall",s:7.7,y:"M",o:"Europe",i:"tt17009710",c:"France",d:"J. Triet",g:["Drama","Thriller"],yr:2023},
+            {t:"Another Round",s:7.7,y:"M",o:"Europe",i:"tt10288566",c:"Denmark",d:"T. Vinterberg",g:["Drama","Comedy"],yr:2020},
+            {t:"Zone of Interest",s:7.5,y:"M",o:"Europe",i:"tt14439270",c:"UK/Pol",d:"J. Glazer",g:["Drama"],yr:2023},
+            {t:"Triangle of Sadness",s:7.3,y:"M",o:"Europe",i:"tt9764358",c:"Sweden",d:"R. Östlund",g:["Comedy","Drama"],yr:2022},
+            {t:"Worst Person in the World",s:7.8,y:"M",o:"Europe",i:"tt10370710",c:"Norway",d:"J. Trier",g:["Comedy","Drama"],yr:2021},
+            {t:"All Quiet on the Western Front",s:7.8,y:"M",o:"Europe",i:"tt1016150",c:"Germany",d:"E. Berger",g:["Action","Drama"],yr:2022},
+            {t:"Bicycle Thieves",s:8.3,y:"M",o:"Europe",i:"tt0040522",c:"Italy",d:"V. De Sica",g:["Drama"],yr:1948},
+            {t:"M",s:8.3,y:"M",o:"Europe",i:"tt0022100",c:"Germany",d:"F. Lang",g:["Thriller"],yr:1931},
+            {t:"Snatch",s:8.2,y:"M",o:"Europe",i:"tt0208092",c:"UK",d:"G. Ritchie",g:["Comedy","Thriller"],yr:2000},
+            {t:"Trainspotting",s:8.1,y:"M",o:"Europe",i:"tt0117951",c:"UK",d:"D. Boyle",g:["Drama"],yr:1996},
+            {t:"Hot Fuzz",s:7.8,y:"M",o:"Europe",i:"tt0425112",c:"UK",d:"E. Wright",g:["Action","Comedy"],yr:2007},
+            {t:"Shaun of the Dead",s:7.9,y:"M",o:"Europe",i:"tt0365748",c:"UK",d:"E. Wright",g:["Comedy","Horror"],yr:2004},
+            {t:"Three Colors: Red",s:8.1,y:"M",o:"Europe",i:"tt0111495",c:"Fr/Pol",d:"K. Kieślowski",g:["Drama","Romance"],yr:1994},
+            {t:"La Haine",s:8.1,y:"M",o:"Europe",i:"tt0113247",c:"France",d:"M. Kassovitz",g:["Drama"],yr:1995},
+            {t:"Persona",s:8.1,y:"M",o:"Europe",i:"tt0060827",c:"Sweden",d:"I. Bergman",g:["Drama","Thriller"],yr:1966},
+            {t:"Stalker",s:8.1,y:"M",o:"Europe",i:"tt0079944",c:"USSR",d:"A. Tarkovsky",g:["Drama"],yr:1979},
+            {t:"Come and See",s:8.4,y:"M",o:"Europe",i:"tt0091251",c:"USSR",d:"E. Klimov",g:["Drama","War"],yr:1985},
+            {t:"Let the Right One In",s:7.9,y:"M",o:"Europe",i:"tt1139797",c:"Sweden",d:"T. Alfredson",g:["Drama","Horror"],yr:2008},
+            {t:"Lock, Stock...",s:8.2,y:"M",o:"Europe",i:"tt0120735",c:"UK",d:"G. Ritchie",g:["Comedy","Thriller"],yr:1998},
+            {t:"In Bruges",s:7.9,y:"M",o:"Europe",i:"tt0780536",c:"UK/Bel",d:"M. McDonagh",g:["Comedy","Drama"],yr:2008},
+            {t:"The Banshees of Inisherin",s:7.7,y:"M",o:"Europe",i:"tt11813216",c:"Ire/UK",d:"M. McDonagh",g:["Drama","Comedy"],yr:2022},
+            {t:"1917",s:8.2,y:"M",o:"Europe",i:"tt8579674",c:"UK",d:"S. Mendes",g:["Drama","Action"],yr:2019},
+            {t:"The Father",s:8.2,y:"M",o:"Europe",i:"tt10272386",c:"UK/Fr",d:"F. Zeller",g:["Drama"],yr:2020},
+            {t:"Jagten (Hunt)",s:8.3,y:"M",o:"Europe",i:"tt2106476",c:"Den",d:"T. Vinterberg",g:["Drama"],yr:2012},
+            {t:"8½",s:8.0,y:"M",o:"Europe",i:"tt0056801",c:"Italy",d:"F. Fellini",g:["Drama"],yr:1963},
+            {t:"La Dolce Vita",s:8.0,y:"M",o:"Europe",i:"tt0053779",c:"Italy",d:"F. Fellini",g:["Drama","Comedy"],yr:1960},
+            {t:"Wild Strawberries",s:8.1,y:"M",o:"Europe",i:"tt0050986",c:"Sweden",d:"I. Bergman",g:["Drama"],yr:1957},
+            {t:"Solaris",s:8.0,y:"M",o:"Europe",i:"tt0069304",c:"USSR",d:"A. Tarkovsky",g:["Drama"],yr:1972},
+            {t:"Mirror",s:8.1,y:"M",o:"Europe",i:"tt0072443",c:"USSR",d:"A. Tarkovsky",g:["Drama"],yr:1975},
+            {t:"Land of Mine",s:7.8,y:"M",o:"Europe",i:"tt3896838",c:"Denmark",d:"M. Zandvliet",g:["Drama","Action"],yr:2015},
+            {t:"A Man Called Ove",s:7.7,y:"M",o:"Europe",i:"tt4080728",c:"Sweden",d:"H. Holm",g:["Comedy","Drama"],yr:2015},
+            {t:"Good Bye Lenin!",s:7.7,y:"M",o:"Europe",i:"tt0323389",c:"Germany",d:"W. Becker",g:["Comedy","Drama"],yr:2003},
+            {t:"The Great Beauty",s:7.7,y:"M",o:"Europe",i:"tt2358891",c:"Italy",d:"P. Sorrentino",g:["Drama"],yr:2013},
+            {t:"Mustang",s:7.6,y:"M",o:"Europe",i:"tt4368418",c:"Fr/Tur",d:"D. Ergüven",g:["Drama"],yr:2015},
+            {t:"Run Lola Run",s:7.6,y:"M",o:"Europe",i:"tt0130827",c:"Germany",d:"T. Tykwer",g:["Thriller"],yr:1998},
+
+            // --- EUROPE SERIES ---
+            {t:"Sherlock",s:9.1,y:"S",o:"Europe",i:"tt1475582",c:"UK",d:"Gatiss/Moffat",g:["Thriller","Drama"],yr:2010},
+            {t:"Peaky Blinders",s:8.8,y:"S",o:"Europe",i:"tt2442560",c:"UK",d:"S. Knight",g:["Drama","Thriller"],yr:2013},
+            {t:"Dark",s:8.7,y:"S",o:"Europe",i:"tt5753856",c:"Germany",d:"Bo Odar/Friese",g:["Drama","Thriller"],yr:2017},
+            {t:"Black Mirror",s:8.7,y:"S",o:"Europe",i:"tt2085059",c:"UK",d:"C. Brooker",g:["Drama","Thriller"],yr:2011},
+            {t:"Fleabag",s:8.7,y:"S",o:"Europe",i:"tt5687612",c:"UK",d:"P. Waller-Bridge",g:["Comedy","Drama"],yr:2016},
+            {t:"Downton Abbey",s:8.7,y:"S",o:"Europe",i:"tt1606375",c:"UK",d:"J. Fellowes",g:["Drama"],yr:2010},
+            {t:"The Crown",s:8.6,y:"S",o:"Europe",i:"tt4786824",c:"UK",d:"P. Morgan",g:["Drama"],yr:2016},
+            {t:"Gomorrah",s:8.7,y:"S",o:"Europe",i:"tt2049116",c:"Italy",d:"R. Saviano",g:["Drama","Thriller"],yr:2014},
+            {t:"Money Heist",s:8.2,y:"S",o:"Europe",i:"tt6468322",c:"Spain",d:"A. Pina",g:["Action","Thriller"],yr:2017},
+            {t:"Luther",s:8.4,y:"S",o:"Europe",i:"tt1474684",c:"UK",d:"N. Cross",g:["Thriller","Drama"],yr:2010},
+            {t:"Babylon Berlin",s:8.4,y:"S",o:"Europe",i:"tt4378376",c:"Germany",d:"Tykwer et al",g:["Drama","Thriller"],yr:2017},
+            {t:"Broadchurch",s:8.4,y:"S",o:"Europe",i:"tt2234222",c:"UK",d:"C. Chibnall",g:["Drama","Thriller"],yr:2013},
+            {t:"Call My Agent!",s:8.3,y:"S",o:"Europe",i:"tt4277922",c:"France",d:"F. Herrero",g:["Comedy","Drama"],yr:2015},
+            {t:"Lupin",s:7.5,y:"S",o:"Europe",i:"tt2531336",c:"France",d:"Kay/Uzan",g:["Action","Thriller"],yr:2021},
+            {t:"Doctor Who",s:8.6,y:"S",o:"Europe",i:"tt0436992",c:"UK",d:"BBC",g:["Action","Drama"],yr:2005},
+            {t:"The Office (UK)",s:8.5,y:"S",o:"Europe",i:"tt0290978",c:"UK",d:"Gervais/Merchant",g:["Comedy"],yr:2001},
+            {t:"Planet Earth",s:9.4,y:"S",o:"Europe",i:"tt0795176",c:"UK",d:"Attenborough",g:["Documentary"],yr:2006},
+            {t:"Top Boy",s:8.4,y:"S",o:"Europe",i:"tt1830379",c:"UK",d:"R. Bennett",g:["Drama","Thriller"],yr:2011},
+            {t:"Happy Valley",s:8.5,y:"S",o:"Europe",i:"tt3428912",c:"UK",d:"S. Wainwright",g:["Drama","Thriller"],yr:2014},
+            {t:"Line of Duty",s:8.7,y:"S",o:"Europe",i:"tt2303687",c:"UK",d:"J. Mercurio",g:["Thriller","Drama"],yr:2012},
+            {t:"Rome",s:8.7,y:"S",o:"Europe",i:"tt0384766",c:"UK/It",d:"Heller/Milius",g:["Action","Drama"],yr:2005},
+            {t:"Taboo",s:8.3,y:"S",o:"Europe",i:"tt3647998",c:"UK",d:"Knight/Hardy",g:["Drama","Thriller"],yr:2017},
+            {t:"Skins",s:8.2,y:"S",o:"Europe",i:"tt0840196",c:"UK",d:"Els/Brittain",g:["Drama"],yr:2007},
+            {t:"Killing Eve",s:8.1,y:"S",o:"Europe",i:"tt7016936",c:"UK",d:"P. Waller-Bridge",g:["Action","Thriller"],yr:2018},
+            {t:"Borgen",s:8.5,y:"S",o:"Europe",i:"tt1526318",c:"Denmark",d:"A. Price",g:["Drama"],yr:2010},
+            {t:"The Bridge",s:8.6,y:"S",o:"Europe",i:"tt1733785",c:"Swed/Den",d:"H. Rosenfeldt",g:["Thriller","Drama"],yr:2011},
+            {t:"Das Boot (TV)",s:7.4,y:"S",o:"Europe",i:"tt5834198",c:"Germany",d:"Nolting",g:["Drama","War"],yr:2018},
+            {t:"Elite",s:7.4,y:"S",o:"Europe",i:"tt7134908",c:"Spain",d:"Montero/Madrona",g:["Thriller","Drama"],yr:2018},
+            {t:"Sex Education",s:8.3,y:"S",o:"Europe",i:"tt8350632",c:"UK",d:"L. Nunn",g:["Comedy","Drama"],yr:2019},
+            {t:"Derry Girls",s:8.5,y:"S",o:"Europe",i:"tt7120662",c:"UK/Ire",d:"L. McGee",g:["Comedy"],yr:2018},
+            {t:"Normal People",s:8.4,y:"S",o:"Europe",i:"tt9059760",c:"Ireland",d:"Abrahamson",g:["Drama","Romance"],yr:2020},
+            {t:"Bodyguard",s:8.1,y:"S",o:"Europe",i:"tt7493974",c:"UK",d:"J. Mercurio",g:["Thriller","Drama"],yr:2018},
+            {t:"The IT Crowd",s:8.5,y:"S",o:"Europe",i:"tt0487831",c:"UK",d:"G. Linehan",g:["Comedy"],yr:2006},
+            {t:"Misfits",s:8.2,y:"S",o:"Europe",i:"tt1548850",c:"UK",d:"H. Overman",g:["Comedy","Drama"],yr:2009},
+            {t:"Slow Horses",s:8.1,y:"S",o:"Europe",i:"tt5875444",c:"UK",d:"W. Smith",g:["Thriller","Drama"],yr:2022},
+            {t:"Heartstopper",s:8.6,y:"S",o:"Europe",i:"tt10638036",c:"UK",d:"A. Oseman",g:["Drama","Romance"],yr:2022},
+            {t:"The End of the F***ing World",s:8.0,y:"S",o:"Europe",i:"tt6257970",c:"UK",d:"Entwistle",g:["Comedy","Drama"],yr:2017},
+            {t:"Monty Python's Flying Circus",s:8.8,y:"S",o:"Europe",i:"tt0063929",c:"UK",d:"Monty Python",g:["Comedy"],yr:1969},
+            {t:"Fawlty Towers",s:8.8,y:"S",o:"Europe",i:"tt0072500",c:"UK",d:"Cleese/Booth",g:["Comedy"],yr:1975},
+            {t:"Mr. Bean",s:8.6,y:"S",o:"Europe",i:"tt0096657",c:"UK",d:"Atkinson",g:["Comedy"],yr:1990},
+            {t:"Dekalog",s:9.0,y:"S",o:"Europe",i:"tt0094990",c:"Poland",d:"K. Kieślowski",g:["Drama"],yr:1989},
+            {t:"The Bureau",s:8.7,y:"S",o:"Europe",i:"tt4063800",c:"France",d:"E. Rochant",g:["Thriller","Drama"],yr:2015},
+            {t:"My Brilliant Friend",s:8.6,y:"S",o:"Europe",i:"tt7278862",c:"Italy",d:"S. Costanzo",g:["Drama"],yr:2018},
+            {t:"Spiral",s:8.5,y:"S",o:"Europe",i:"tt0477507",c:"France",d:"A. Larchêr",g:["Drama","Thriller"],yr:2005},
+            {t:"The Killing (Forbrydelsen)",s:8.4,y:"S",o:"Europe",i:"tt0826760",c:"Denmark",d:"S. Sveistrup",g:["Drama","Thriller"],yr:2007},
+            {t:"Deutschland 83",s:8.1,y:"S",o:"Europe",i:"tt4445154",c:"Germany",d:"A. Winger",g:["Drama","Thriller"],yr:2015},
+            {t:"Pagan Peak",s:8.0,y:"S",o:"Europe",i:"tt8305596",c:"Ger/Aus",d:"Cyrill Boss",g:["Thriller","Drama"],yr:2019},
+            {t:"Trapped",s:8.0,y:"S",o:"Europe",i:"tt3561180",c:"Iceland",d:"B. Kormákur",g:["Thriller","Drama"],yr:2015},
+
+            // --- ASIA & AFRICA MOVIES ---
+            {t:"Spirited Away",s:8.6,y:"M",o:"AsiaAfrica",i:"tt0245429",c:"Japan",d:"H. Miyazaki",g:["Animation","Adventure"],yr:2001},
+            {t:"Parasite",s:8.5,y:"M",o:"AsiaAfrica",i:"tt6751668",c:"S. Korea",d:"Bong Joon Ho",g:["Thriller","Drama","Comedy"],yr:2019},
+            {t:"Seven Samurai",s:8.6,y:"M",o:"AsiaAfrica",i:"tt0047478",c:"Japan",d:"A. Kurosawa",g:["Action","Drama"],yr:1954},
+            {t:"Harakiri",s:8.6,y:"M",o:"AsiaAfrica",i:"tt0056058",c:"Japan",d:"M. Kobayashi",g:["Action","Drama"],yr:1962},
+            {t:"Grave of the Fireflies",s:8.5,y:"M",o:"AsiaAfrica",i:"tt0095327",c:"Japan",d:"I. Takahata",g:["Animation","Drama"],yr:1988},
+            {t:"Your Name.",s:8.4,y:"M",o:"AsiaAfrica",i:"tt5311514",c:"Japan",d:"M. Shinkai",g:["Animation","Drama"],yr:2016},
+            {t:"Oldboy",s:8.3,y:"M",o:"AsiaAfrica",i:"tt0364569",c:"S. Korea",d:"Park Chan-wook",g:["Action","Thriller"],yr:2003},
+            {t:"Princess Mononoke",s:8.3,y:"M",o:"AsiaAfrica",i:"tt0119698",c:"Japan",d:"H. Miyazaki",g:["Animation","Action"],yr:1997},
+            {t:"Dangal",s:8.3,y:"M",o:"AsiaAfrica",i:"tt5074352",c:"India",d:"N. Tiwari",g:["Action","Drama"],yr:2016},
+            {t:"3 Idiots",s:8.4,y:"M",o:"AsiaAfrica",i:"tt1187043",c:"India",d:"R. Hirani",g:["Comedy","Drama"],yr:2009},
+            {t:"Taare Zameen Par",s:8.3,y:"M",o:"AsiaAfrica",i:"tt0986264",c:"India",d:"A. Khan",g:["Drama"],yr:2007},
+            {t:"A Separation",s:8.3,y:"M",o:"AsiaAfrica",i:"tt1832382",c:"Iran",d:"A. Farhadi",g:["Drama"],yr:2011},
+            {t:"Ran",s:8.2,y:"M",o:"AsiaAfrica",i:"tt0089881",c:"Japan",d:"A. Kurosawa",g:["Action","Drama"],yr:1985},
+            {t:"Howl's Moving Castle",s:8.2,y:"M",o:"AsiaAfrica",i:"tt0347149",c:"Japan",d:"H. Miyazaki",g:["Animation","Adventure"],yr:2004},
+            {t:"My Neighbor Totoro",s:8.1,y:"M",o:"AsiaAfrica",i:"tt0096283",c:"Japan",d:"H. Miyazaki",g:["Animation","Family"],yr:1988},
+            {t:"Memories of Murder",s:8.1,y:"M",o:"AsiaAfrica",i:"tt0353969",c:"S. Korea",d:"Bong Joon Ho",g:["Thriller","Drama"],yr:2003},
+            {t:"The Handmaiden",s:8.1,y:"M",o:"AsiaAfrica",i:"tt4016934",c:"S. Korea",d:"Park Chan-wook",g:["Drama","Thriller"],yr:2016},
+            {t:"In the Mood for Love",s:8.1,y:"M",o:"AsiaAfrica",i:"tt0118694",c:"H. Kong",d:"Wong Kar-wai",g:["Drama","Romance"],yr:2000},
+            {t:"Chungking Express",s:8.0,y:"M",o:"AsiaAfrica",i:"tt0109424",c:"H. Kong",d:"Wong Kar-wai",g:["Comedy","Drama"],yr:1994},
+            {t:"Crouching Tiger...",s:7.9,y:"M",o:"AsiaAfrica",i:"tt0190332",c:"China",d:"Ang Lee",g:["Action","Drama"],yr:2000},
+            {t:"Hero",s:7.9,y:"M",o:"AsiaAfrica",i:"tt0299977",c:"China",d:"Zhang Yimou",g:["Action","Drama"],yr:2002},
+            {t:"Infernal Affairs",s:8.0,y:"M",o:"AsiaAfrica",i:"tt0338564",c:"H. Kong",d:"Lau/Mak",g:["Thriller","Action"],yr:2002},
+            {t:"Akira",s:8.0,y:"M",o:"AsiaAfrica",i:"tt0094625",c:"Japan",d:"K. Otomo",g:["Animation","Action"],yr:1988},
+            {t:"Perfect Blue",s:8.0,y:"M",o:"AsiaAfrica",i:"tt0156887",c:"Japan",d:"S. Kon",g:["Animation","Thriller"],yr:1997},
+            {t:"Godzilla Minus One",s:7.9,y:"M",o:"AsiaAfrica",i:"tt23289160",c:"Japan",d:"T. Yamazaki",g:["Action","Sci-Fi"],yr:2023},
+            {t:"RRR",s:7.8,y:"M",o:"AsiaAfrica",i:"tt8178634",c:"India",d:"S. Rajamouli",g:["Action","Drama"],yr:2022},
+            {t:"Train to Busan",s:7.6,y:"M",o:"AsiaAfrica",i:"tt5700672",c:"S. Korea",d:"Yeon Sang-ho",g:["Action","Horror"],yr:2016},
+            {t:"Drive My Car",s:7.6,y:"M",o:"AsiaAfrica",i:"tt14035266",c:"Japan",d:"R. Hamaguchi",g:["Drama"],yr:2021},
+            {t:"Shoplifters",s:7.9,y:"M",o:"AsiaAfrica",i:"tt8075192",c:"Japan",d:"H. Kore-eda",g:["Drama"],yr:2018},
+            {t:"Capernaum",s:8.4,y:"M",o:"AsiaAfrica",i:"tt8267604",c:"Lebanon",d:"N. Labaki",g:["Drama"],yr:2018},
+            {t:"District 9",s:7.9,y:"M",o:"AsiaAfrica",i:"tt1136608",c:"S. Africa",d:"N. Blomkamp",g:["Action","Thriller"],yr:2009},
+            {t:"Tsotsi",s:7.2,y:"M",o:"AsiaAfrica",i:"tt0468565",c:"S. Africa",d:"G. Hood",g:["Drama"],yr:2005},
+            {t:"The Raid",s:7.6,y:"M",o:"AsiaAfrica",i:"tt1899353",c:"Indo",d:"G. Evans",g:["Action","Thriller"],yr:2011},
+            {t:"Ip Man",s:8.0,y:"M",o:"AsiaAfrica",i:"tt1220719",c:"H. Kong",d:"W. Yip",g:["Action","Drama"],yr:2008},
+            {t:"Children of Heaven",s:8.2,y:"M",o:"AsiaAfrica",i:"tt0118849",c:"Iran",d:"M. Majidi",g:["Drama","Family"],yr:1997},
+            {t:"Taste of Cherry",s:7.7,y:"M",o:"AsiaAfrica",i:"tt0120265",c:"Iran",d:"A. Kiarostami",g:["Drama"],yr:1997},
+            {t:"Close-Up",s:8.2,y:"M",o:"AsiaAfrica",i:"tt0100234",c:"Iran",d:"A. Kiarostami",g:["Drama","Documentary"],yr:1990},
+            {t:"Rashomon",s:8.2,y:"M",o:"AsiaAfrica",i:"tt0042876",c:"Japan",d:"A. Kurosawa",g:["Drama","Thriller"],yr:1950},
+            {t:"Yojimbo",s:8.2,y:"M",o:"AsiaAfrica",i:"tt0055630",c:"Japan",d:"A. Kurosawa",g:["Action","Drama"],yr:1961},
+            {t:"Ikiru",s:8.3,y:"M",o:"AsiaAfrica",i:"tt0044741",c:"Japan",d:"A. Kurosawa",g:["Drama"],yr:1952},
+            {t:"Past Lives",s:7.9,y:"M",o:"AsiaAfrica",i:"tt13238346",c:"S.Kor/US",d:"C. Song",g:["Drama","Romance"],yr:2023},
+            {t:"Minari",s:7.4,y:"M",o:"AsiaAfrica",i:"tt10633456",c:"S.Kor/US",d:"L. Chung",g:["Drama"],yr:2020},
+            {t:"Burning",s:7.5,y:"M",o:"AsiaAfrica",i:"tt7282468",c:"S. Korea",d:"Lee Chang-dong",g:["Drama","Thriller"],yr:2018},
+            {t:"Hotel Rwanda",s:8.1,y:"M",o:"AsiaAfrica",i:"tt0395169",c:"UK/SA",d:"T. George",g:["Drama","History"],yr:2004},
+            {t:"Departures",s:8.0,y:"M",o:"AsiaAfrica",i:"tt1068646",c:"Japan",d:"Y. Takita",g:["Drama"],yr:2008},
+            {t:"Castaway on the Moon",s:8.0,y:"M",o:"AsiaAfrica",i:"tt1499666",c:"S. Korea",d:"Lee Hae-jun",g:["Comedy","Drama"],yr:2009},
+            {t:"Nobody Knows",s:8.0,y:"M",o:"AsiaAfrica",i:"tt0408664",c:"Japan",d:"H. Kore-eda",g:["Drama"],yr:2004},
+            {t:"I Saw the Devil",s:7.8,y:"M",o:"AsiaAfrica",i:"tt1588170",c:"S. Korea",d:"Kim Jee-woon",g:["Action","Thriller"],yr:2010},
+            {t:"The Blue Caftan",s:7.6,y:"M",o:"AsiaAfrica",i:"tt19893664",c:"Morocco",d:"M. Touzani",g:["Drama"],yr:2022},
+            {t:"Cairo Station",s:7.6,y:"M",o:"AsiaAfrica",i:"tt0051406",c:"Egypt",d:"Y. Chahine",g:["Drama","Thriller"],yr:1958},
+            {t:"Better Days",s:7.5,y:"M",o:"AsiaAfrica",i:"tt9584048",c:"China",d:"D. Tsang",g:["Drama","Thriller"],yr:2019},
+            {t:"The Wailing",s:7.4,y:"M",o:"AsiaAfrica",i:"tt5215952",c:"S. Korea",d:"Na Hong-jin",g:["Horror","Thriller"],yr:2016},
+
+            // --- ASIA & AFRICA SERIES ---
+            {t:"Attack on Titan",s:9.1,y:"S",o:"AsiaAfrica",i:"tt2560140",c:"Japan",d:"T. Araki",g:["Action","Animation"],yr:2013},
+            {t:"Fullmetal Alchemist: B",s:9.1,y:"S",o:"AsiaAfrica",i:"tt0421359",c:"Japan",d:"Y. Irie",g:["Action","Animation"],yr:2009},
+            {t:"Hunter x Hunter",s:9.0,y:"S",o:"AsiaAfrica",i:"tt2098220",c:"Japan",d:"H. Koujina",g:["Action","Animation"],yr:2011},
+            {t:"Death Note",s:8.9,y:"S",o:"AsiaAfrica",i:"tt0877057",c:"Japan",d:"T. Araki",g:["Thriller","Animation"],yr:2006},
+            {t:"Cowboy Bebop",s:8.9,y:"S",o:"AsiaAfrica",i:"tt0213338",c:"Japan",d:"S. Watanabe",g:["Action","Animation"],yr:1998},
+            {t:"Vinland Saga",s:8.8,y:"S",o:"AsiaAfrica",i:"tt10233448",c:"Japan",d:"S. Yabuta",g:["Action","Animation"],yr:2019},
+            {t:"One Punch Man",s:8.7,y:"S",o:"AsiaAfrica",i:"tt4508902",c:"Japan",d:"S. Natsume",g:["Action","Comedy"],yr:2015},
+            {t:"Steins;Gate",s:8.8,y:"S",o:"AsiaAfrica",i:"tt1910272",c:"Japan",d:"H. Hamasaki",g:["Thriller","Animation"],yr:2011},
+            {t:"Dragon Ball Z",s:8.8,y:"S",o:"AsiaAfrica",i:"tt0214341",c:"Japan",d:"D. Nishio",g:["Action","Animation"],yr:1989},
+            {t:"Neon Genesis Evangelion",s:8.5,y:"S",o:"AsiaAfrica",i:"tt0112159",c:"Japan",d:"H. Anno",g:["Action","Drama"],yr:1995},
+            {t:"Sacred Games",s:8.5,y:"S",o:"AsiaAfrica",i:"tt6077448",c:"India",d:"Kashyap/Motwane",g:["Action","Thriller"],yr:2018},
+            {t:"Scam 1992",s:9.3,y:"S",o:"AsiaAfrica",i:"tt12392504",c:"India",d:"H. Mehta",g:["Drama"],yr:2020},
+            {t:"The Family Man",s:8.7,y:"S",o:"AsiaAfrica",i:"tt9544034",c:"India",d:"Nidimoru/Krishna",g:["Action","Comedy"],yr:2019},
+            {t:"Mirzapur",s:8.5,y:"S",o:"AsiaAfrica",i:"tt6473300",c:"India",d:"K. Rao",g:["Action","Thriller"],yr:2018},
+            {t:"Fauda",s:8.3,y:"S",o:"AsiaAfrica",i:"tt4565380",c:"Israel",d:"L. Raz",g:["Action","Thriller"],yr:2015},
+            {t:"Squid Game",s:8.0,y:"S",o:"AsiaAfrica",i:"tt10919420",c:"S. Korea",d:"Hwang Dong-hyuk",g:["Action","Thriller"],yr:2021},
+            {t:"Kingdom",s:8.3,y:"S",o:"AsiaAfrica",i:"tt8743804",c:"S. Korea",d:"Kim Seong-hun",g:["Action","Thriller"],yr:2019},
+            {t:"Crash Landing on You",s:8.7,y:"S",o:"AsiaAfrica",i:"tt10850932",c:"S. Korea",d:"Lee Jeong-hyo",g:["Comedy","Romance"],yr:2019},
+            {t:"Reply 1988",s:9.2,y:"S",o:"AsiaAfrica",i:"tt5182866",c:"S. Korea",d:"Shin Won-ho",g:["Comedy","Drama"],yr:2015},
+            {t:"My Mister",s:9.1,y:"S",o:"AsiaAfrica",i:"tt7923710",c:"S. Korea",d:"Kim Won-seok",g:["Drama"],yr:2018},
+            {t:"Hospital Playlist",s:8.8,y:"S",o:"AsiaAfrica",i:"tt11769304",c:"S. Korea",d:"Shin Won-ho",g:["Comedy","Drama"],yr:2020},
+            {t:"Mr. Sunshine",s:8.7,y:"S",o:"AsiaAfrica",i:"tt7094780",c:"S. Korea",d:"Lee Eung-bok",g:["Action","Drama"],yr:2018},
+            {t:"Alice in Borderland",s:7.7,y:"S",o:"AsiaAfrica",i:"tt10795658",c:"Japan",d:"S. Sato",g:["Action","Thriller"],yr:2020},
+            {t:"Delhi Crime",s:8.5,y:"S",o:"AsiaAfrica",i:"tt9398466",c:"India",d:"R. Mehta",g:["Drama","Crime"],yr:2019},
+            {t:"Pachinko",s:8.4,y:"S",o:"AsiaAfrica",i:"tt10155702",c:"S. Korea",d:"K. Gondra",g:["Drama"],yr:2022},
+            {t:"Moving",s:8.5,y:"S",o:"AsiaAfrica",i:"tt24698180",c:"S. Korea",d:"Park In-je",g:["Action","Drama"],yr:2023},
+            {t:"Prisoners of War",s:8.4,y:"S",o:"AsiaAfrica",i:"tt1676462",c:"Israel",d:"G. Raff",g:["Thriller","Drama"],yr:2010},
+            {t:"Shogun",s:9.0,y:"S",o:"AsiaAfrica",i:"tt2788316",c:"Japan/US",d:"Marks/Kondo",g:["Drama","Action"],yr:2024},
+            {t:"Midnight Diner",s:8.6,y:"S",o:"AsiaAfrica",i:"tt1882928",c:"Japan",d:"J. Matsuoka",g:["Drama"],yr:2009},
+            {t:"Erased",s:8.5,y:"S",o:"AsiaAfrica",i:"tt5249462",c:"Japan",d:"T. Shimomura",g:["Thriller","Drama"],yr:2017},
+            {t:"Monster",s:8.7,y:"S",o:"AsiaAfrica",i:"tt0434706",c:"Japan",d:"M. Kojima",g:["Thriller","Animation"],yr:2004},
+            {t:"Samurai Champloo",s:8.6,y:"S",o:"AsiaAfrica",i:"tt0423731",c:"Japan",d:"S. Watanabe",g:["Action","Animation"],yr:2004},
+            {t:"Mushishi",s:8.5,y:"S",o:"AsiaAfrica",i:"tt0807832",c:"Japan",d:"H. Nagahama",g:["Drama","Animation"],yr:2005},
+            {t:"Haikyuu!!",s:8.7,y:"S",o:"AsiaAfrica",i:"tt3398540",c:"Japan",d:"S. Mitsunaka",g:["Comedy","Animation"],yr:2014},
+            {t:"Code Geass",s:8.7,y:"S",o:"AsiaAfrica",i:"tt0879308",c:"Japan",d:"G. Taniguchi",g:["Action","Animation"],yr:2006},
+            {t:"Great Teacher Onizuka",s:8.5,y:"S",o:"AsiaAfrica",i:"tt0270082",c:"Japan",d:"N. Abe",g:["Comedy","Animation"],yr:1999},
+            {t:"Rocket Boys",s:8.9,y:"S",o:"AsiaAfrica",i:"tt14962222",c:"India",d:"A. Pannu",g:["Drama"],yr:2022},
+            {t:"Aspirants",s:9.2,y:"S",o:"AsiaAfrica",i:"tt14392248",c:"India",d:"A. V. Kumar",g:["Drama"],yr:2021},
+            {t:"Nirvana in Fire",s:8.9,y:"S",o:"AsiaAfrica",i:"tt5146678",c:"China",d:"K. Sheng",g:["Drama"],yr:2015},
+            {t:"The Untamed",s:8.8,y:"S",o:"AsiaAfrica",i:"tt10554898",c:"China",d:"Z. Weimen",g:["Action","Fantasy"],yr:2019},
+            {t:"1 Litre of Tears",s:8.6,y:"S",o:"AsiaAfrica",i:"tt0499104",c:"Japan",d:"M. Murakami",g:["Drama"],yr:2005},
+            {t:"Signal",s:8.5,y:"S",o:"AsiaAfrica",i:"tt5332206",c:"S. Korea",d:"Kim Won-seok",g:["Thriller","Drama"],yr:2016},
+            {t:"Hikaru no Go",s:8.3,y:"S",o:"AsiaAfrica",i:"tt13443424",c:"China",d:"L. Chang",g:["Drama"],yr:2020},
+
+            // --- LATAM & BRAZIL MOVIES ---
+            {t:"City of God",s:8.6,y:"M",o:"LatAm",i:"tt0317248",c:"Brazil",d:"Meirelles/Lund",g:["Drama","Thriller"],yr:2002},
+            {t:"Pan's Labyrinth",s:8.2,y:"M",o:"LatAm",i:"tt0457430",c:"Mex/Spa",d:"G. del Toro",g:["Drama","Fantasy"],yr:2006},
+            {t:"Roma",s:7.7,y:"M",o:"LatAm",i:"tt6155172",c:"Mexico",d:"A. Cuarón",g:["Drama"],yr:2018},
+            {t:"Y Tu Mamá También",s:7.7,y:"M",o:"LatAm",i:"tt0245574",c:"Mexico",d:"A. Cuarón",g:["Drama","Comedy"],yr:2001},
+            {t:"Amores Perros",s:8.1,y:"M",o:"LatAm",i:"tt0245712",c:"Mexico",d:"G. Iñárritu",g:["Drama","Thriller"],yr:2000},
+            {t:"Birdman",s:7.7,y:"M",o:"LatAm",i:"tt2562232",c:"USA/Mex",d:"G. Iñárritu",g:["Comedy","Drama"],yr:2014}, 
+            {t:"Gravity",s:7.7,y:"M",o:"LatAm",i:"tt1454468",c:"USA/Mex",d:"A. Cuarón",g:["Sci-Fi","Thriller"],yr:2013},
+            {t:"Shape of Water",s:7.3,y:"M",o:"LatAm",i:"tt5580390",c:"USA/Mex",d:"G. del Toro",g:["Drama","Fantasy"],yr:2017},
+            {t:"Elite Squad",s:8.0,y:"M",o:"LatAm",i:"tt0861739",c:"Brazil",d:"J. Padilha",g:["Action","Thriller"],yr:2007},
+            {t:"Elite Squad 2",s:8.0,y:"M",o:"LatAm",i:"tt1555149",c:"Brazil",d:"J. Padilha",g:["Action","Thriller"],yr:2010},
+            {t:"Central Station",s:8.0,y:"M",o:"LatAm",i:"tt0140887",c:"Brazil",d:"W. Salles",g:["Drama"],yr:1998},
+            {t:"Pixote",s:8.2,y:"M",o:"LatAm",i:"tt0082912",c:"Brazil",d:"H. Babenco",g:["Drama","Crime"],yr:1981},
+            {t:"Black God, White Devil",s:7.3,y:"M",o:"LatAm",i:"tt0058000",c:"Brazil",d:"G. Rocha",g:["Drama","Adventure"],yr:1964},
+            {t:"The Secret in Their Eyes",s:8.2,y:"M",o:"LatAm",i:"tt1305806",c:"Argent",d:"J. Campanella",g:["Drama","Thriller"],yr:2009},
+            {t:"Wild Tales",s:8.1,y:"M",o:"LatAm",i:"tt3011894",c:"Argent",d:"D. Szifron",g:["Comedy","Thriller"],yr:2014},
+            {t:"Argentina, 1985",s:7.6,y:"M",o:"LatAm",i:"tt14947158",c:"Argent",d:"S. Mitre",g:["Drama"],yr:2022},
+            {t:"Nine Queens",s:7.9,y:"M",o:"LatAm",i:"tt0247586",c:"Argent",d:"F. Bielinsky",g:["Thriller","Drama"],yr:2000},
+            {t:"The Official Story",s:7.7,y:"M",o:"LatAm",i:"tt0089276",c:"Argent",d:"L. Puenzo",g:["Drama","History"],yr:1985},
+            {t:"Macario",s:8.3,y:"M",o:"LatAm",i:"tt0054042",c:"Mexico",d:"R. Gavaldón",g:["Drama","Fantasy"],yr:1960},
+            {t:"Los Olvidados",s:8.3,y:"M",o:"LatAm",i:"tt0042804",c:"Mexico",d:"L. Buñuel",g:["Drama","Crime"],yr:1950},
+            {t:"Like Water for Chocolate",s:7.1,y:"M",o:"LatAm",i:"tt0103994",c:"Mexico",d:"A. Arau",g:["Drama","Romance"],yr:1992},
+            {t:"The Motorcycle Diaries",s:7.7,y:"M",o:"LatAm",i:"tt0318462",c:"Arg/Br",d:"W. Salles",g:["Drama","Adventure"],yr:2004},
+            {t:"Embrace of the Serpent",s:7.8,y:"M",o:"LatAm",i:"tt4285496",c:"Colom",d:"C. Guerra",g:["Drama","Adventure"],yr:2015},
+            {t:"Machuca",s:7.7,y:"M",o:"LatAm",i:"tt0378284",c:"Chile",d:"A. Wood",g:["Drama"],yr:2004},
+            {t:"No",s:7.4,y:"M",o:"LatAm",i:"tt2059255",c:"Chile",d:"P. Larraín",g:["Drama"],yr:2012},
+            {t:"A Fantastic Woman",s:7.2,y:"M",o:"LatAm",i:"tt5639354",c:"Chile",d:"S. Lelio",g:["Drama"],yr:2017},
+            {t:"Carandiru",s:7.6,y:"M",o:"LatAm",i:"tt0293007",c:"Brazil",d:"H. Babenco",g:["Drama","Crime"],yr:2003},
+            {t:"Bacurau",s:7.3,y:"M",o:"LatAm",i:"tt2762504",c:"Brazil",d:"Mendonça Filho",g:["Action","Thriller"],yr:2019},
+            {t:"Aquarius",s:7.4,y:"M",o:"LatAm",i:"tt4933842",c:"Brazil",d:"Mendonça Filho",g:["Drama"],yr:2016},
+            {t:"The Second Mother",s:7.7,y:"M",o:"LatAm",i:"tt3742378",c:"Brazil",d:"A. Muylaert",g:["Comedy","Drama"],yr:2015},
+            {t:"Strawberry and Chocolate",s:7.3,y:"M",o:"LatAm",i:"tt0106966",c:"Cuba",d:"Gutiérrez Alea",g:["Comedy","Drama"],yr:1993},
+            {t:"I Am Cuba",s:8.2,y:"M",o:"LatAm",i:"tt0058604",c:"Cuba",d:"M. Kalatozov",g:["Drama"],yr:1964},
+            {t:"Monos",s:7.0,y:"M",o:"LatAm",i:"tt6062774",c:"Colom",d:"A. Landes",g:["Drama","Thriller"],yr:2019},
+            {t:"Maria Full of Grace",s:7.4,y:"M",o:"LatAm",i:"tt0390221",c:"Colom",d:"J. Marston",g:["Drama","Crime"],yr:2004},
+            {t:"Biutiful",s:7.5,y:"M",o:"LatAm",i:"tt1164999",c:"Mex/Spa",d:"G. Iñárritu",g:["Drama"],yr:2010},
+            {t:"Babel",s:7.4,y:"M",o:"LatAm",i:"tt0449467",c:"US/Mex",d:"G. Iñárritu",g:["Drama"],yr:2006},
+            {t:"The Devil's Backbone",s:7.4,y:"M",o:"LatAm",i:"tt0256009",c:"Spain/Mex",d:"G. del Toro",g:["Horror","Drama"],yr:2001},
+            {t:"Instructions Not Included",s:7.5,y:"M",o:"LatAm",i:"tt2378281",c:"Mexico",d:"E. Derbez",g:["Comedy","Drama"],yr:2013},
+            {t:"The Battle of Chile",s:8.2,y:"M",o:"LatAm",i:"tt0072681",c:"Chile",d:"P. Guzmán",g:["Documentary"],yr:1975},
+            {t:"Jackal of Nahueltoro",s:7.7,y:"M",o:"LatAm",i:"tt0064152",c:"Chile",d:"M. Littin",g:["Drama","Crime"],yr:1969},
+            {t:"The Mole Agent",s:7.6,y:"M",o:"LatAm",i:"tt11394298",c:"Chile",d:"M. Alberdi",g:["Documentary","Comedy"],yr:2020},
+            {t:"Valparaiso, My Love",s:7.6,y:"M",o:"LatAm",i:"tt0065163",c:"Chile",d:"A. Francia",g:["Drama"],yr:1969},
+            {t:"Julio Begins in July",s:7.5,y:"M",o:"LatAm",i:"tt0079379",c:"Chile",d:"S. Caiozzi",g:["Drama"],yr:1979},
+            {t:"Nostalgia for the Light",s:7.5,y:"M",o:"LatAm",i:"tt1556190",c:"Chile",d:"P. Guzmán",g:["Documentary"],yr:2010},
+            {t:"The Pearl Button",s:7.5,y:"M",o:"LatAm",i:"tt4377864",c:"Chile",d:"P. Guzmán",g:["Documentary"],yr:2015},
+            {t:"Tres tristes tigres",s:7.5,y:"M",o:"LatAm",i:"tt0063717",c:"Chile",d:"R. Ruiz",g:["Drama"],yr:1968},
+            {t:"Cordillera of Dreams",s:7.4,y:"M",o:"LatAm",i:"tt10222740",c:"Chile",d:"P. Guzmán",g:["Documentary"],yr:2019},
+            {t:"Bear Story",s:7.7,y:"M",o:"LatAm",i:"tt4096052",c:"Chile",d:"G. Osorio",g:["Animation","Drama"],yr:2014},
+            {t:"Waiting for the Hearse",s:8.1,y:"M",o:"LatAm",i:"tt0089108",c:"Argent",d:"A. Doria",g:["Comedy"],yr:1985},
+            {t:"Son of the Bride",s:8.0,y:"M",o:"LatAm",i:"tt0292542",c:"Argent",d:"J. Campanella",g:["Comedy","Drama"],yr:2001},
+            {t:"The Heist of the Century",s:7.8,y:"M",o:"LatAm",i:"tt10948718",c:"Argent",d:"A. Winograd",g:["Comedy","Thriller"],yr:2020},
+            {t:"Time of the Brave",s:7.6,y:"M",o:"LatAm",i:"tt0462670",c:"Argent",d:"D. Szifron",g:["Comedy","Action"],yr:2005},
+            {t:"Man Facing Southeast",s:7.6,y:"M",o:"LatAm",i:"tt0091216",c:"Argent",d:"E. Subiela",g:["Drama","Sci-Fi"],yr:1986},
+            {t:"Autumn Sun",s:7.6,y:"M",o:"LatAm",i:"tt0117688",c:"Argent",d:"E. Mignogna",g:["Drama","Romance"],yr:1996},
+            {t:"Valentín",s:7.6,y:"M",o:"LatAm",i:"tt0337372",c:"Argent",d:"A. Agresti",g:["Comedy","Drama"],yr:2002},
+            {t:"Distinguished Citizen",s:7.5,y:"M",o:"LatAm",i:"tt4561992",c:"Argent",d:"Duprat/Cohn",g:["Comedy","Drama"],yr:2016},
+            {t:"Martín (Hache)",s:7.5,y:"M",o:"LatAm",i:"tt0119623",c:"Argent",d:"A. Aristarain",g:["Drama"],yr:1997},
+            {t:"Common Ground",s:7.4,y:"M",o:"LatAm",i:"tt0329319",c:"Argent",d:"A. Aristarain",g:["Drama"],yr:2002},
+
+            // --- LATAM & BRAZIL SERIES ---
+            {t:"Narcos",s:8.8,y:"S",o:"LatAm",i:"tt2707408",c:"Colom",d:"C. Brancato",g:["Drama","Thriller"],yr:2015},
+            {t:"Narcos: Mexico",s:8.4,y:"S",o:"LatAm",i:"tt8714904",c:"Mexico",d:"C. Bernard",g:["Drama","Thriller"],yr:2018},
+            {t:"Club de Cuervos",s:8.2,y:"S",o:"LatAm",i:"tt4680240",c:"Mexico",d:"G. Alazraki",g:["Comedy","Drama"],yr:2015},
+            {t:"La Casa de las Flores",s:7.6,y:"S",o:"LatAm",i:"tt7660858",c:"Mexico",d:"M. Caro",g:["Comedy","Drama"],yr:2018},
+            {t:"El Chavo del Ocho",s:7.4,y:"S",o:"LatAm",i:"tt0066649",c:"Mexico",d:"R. Gómez Bolaños",g:["Comedy"],yr:1972},
+            {t:"El Chapo",s:7.8,y:"S",o:"LatAm",i:"tt6692188",c:"Mexico",d:"S. Posada",g:["Drama"],yr:2017},
+            {t:"3%",s:7.3,y:"S",o:"LatAm",i:"tt4922804",c:"Brazil",d:"P. Aguilera",g:["Action","Thriller"],yr:2016},
+            {t:"The Mechanism",s:8.2,y:"S",o:"LatAm",i:"tt6873658",c:"Brazil",d:"J. Padilha",g:["Drama","Thriller"],yr:2018},
+            {t:"Invisible City",s:7.2,y:"S",o:"LatAm",i:"tt8878862",c:"Brazil",d:"C. Saldanha",g:["Fantasy","Thriller"],yr:2021},
+            {t:"Coisa Mais Linda",s:7.9,y:"S",o:"LatAm",i:"tt8749198",c:"Brazil",d:"G. Giuliano",g:["Drama","Romance"],yr:2019},
+            {t:"Brotherhood",s:7.5,y:"S",o:"LatAm",i:"tt10443962",c:"Brazil",d:"P. Lins",g:["Drama","Thriller"],yr:2019},
+            {t:"Under Pressure",s:8.6,y:"S",o:"LatAm",i:"tt6300486",c:"Brazil",d:"A. Waddington",g:["Drama"],yr:2017},
+            {t:"El Reino",s:7.2,y:"S",o:"LatAm",i:"tt14050730",c:"Argent",d:"M. Piñeiro",g:["Drama","Thriller"],yr:2021},
+            {t:"Los Simuladores",s:9.0,y:"S",o:"LatAm",i:"tt0313936",c:"Argent",d:"D. Szifron",g:["Comedy","Action"],yr:2002},
+            {t:"El Marginal",s:8.1,y:"S",o:"LatAm",i:"tt5252192",c:"Argent",d:"S. Ortega",g:["Drama","Thriller"],yr:2016},
+            {t:"Okupas",s:8.4,y:"S",o:"LatAm",i:"tt0262175",c:"Argent",d:"B. Stagnaro",g:["Drama"],yr:2000},
+            {t:"Epitafios",s:7.8,y:"S",o:"LatAm",i:"tt0423641",c:"Argent",d:"Pol-ka",g:["Drama","Thriller"],yr:2004},
+            {t:"The Queen of Flow",s:7.8,y:"S",o:"LatAm",i:"tt8242484",c:"Colom",d:"A. Torres",g:["Drama"],yr:2018},
+            {t:"Pablo Escobar: El Patrón",s:8.5,y:"S",o:"LatAm",i:"tt2186450",c:"Colom",d:"J. Moreno",g:["Drama","Action"],yr:2012},
+            {t:"Wild District",s:8.0,y:"S",o:"LatAm",i:"tt7663278",c:"Colom",d:"C. Conti",g:["Action","Thriller"],yr:2018},
+            {t:"Sr. Ávila",s:8.0,y:"S",o:"LatAm",i:"tt2610534",c:"Mexico",d:"W. Slavich",g:["Drama","Thriller"],yr:2013},
+            {t:"Monarca",s:7.7,y:"S",o:"LatAm",i:"tt8952328",c:"Mexico",d:"D. Posada",g:["Drama"],yr:2019},
+            {t:"Capadocia",s:7.7,y:"S",o:"LatAm",i:"tt1041933",c:"Mexico",d:"Epigmenio Ibarra",g:["Drama"],yr:2008},
+            {t:"Prófugos",s:8.1,y:"S",o:"LatAm",i:"tt1933580",c:"Chile",d:"P. Larraín",g:["Action","Thriller"],yr:2011},
+            {t:"Bala Loca",s:7.8,y:"S",o:"LatAm",i:"tt5844070",c:"Chile",d:"M. Ferrari",g:["Thriller","Drama"],yr:2016},
+            {t:"Magnífica 70",s:7.9,y:"S",o:"LatAm",i:"tt4261730",c:"Brazil",d:"C. Torres",g:["Drama"],yr:2015},
+            {t:"Pico da Neblina",s:7.5,y:"S",o:"LatAm",i:"tt10705626",c:"Brazil",d:"Q. Meirelles",g:["Drama"],yr:2019},
+            {t:"Psi",s:7.8,y:"S",o:"LatAm",i:"tt3292418",c:"Brazil",d:"C. Calligaris",g:["Drama"],yr:2014},
+            {t:"Hermanos Detectives",s:8.0,y:"S",o:"LatAm",i:"tt0800392",c:"Argent",d:"D. Szifron",g:["Comedy","Mystery"],yr:2006},
+            {t:"Vientos de agua",s:8.4,y:"S",o:"LatAm",i:"tt0496180",c:"Arg/Spa",d:"J. Campanella",g:["Drama"],yr:2006},
+            {t:"Mujeres Asesinas",s:7.8,y:"S",o:"LatAm",i:"tt0456270",c:"Argent",d:"Pol-ka",g:["Drama","Thriller"],yr:2005},
+            {t:"Soy Tu Fan",s:7.8,y:"S",o:"LatAm",i:"tt1630456",c:"Mexico",d:"D. Paris",g:["Comedy","Romance"],yr:2010},
+            {t:"Impuros",s:8.2,y:"S",o:"LatAm",i:"tt9020556",c:"Brazil",d:"A. Barriga",g:["Action","Drama"],yr:2018},
+            {t:"El Encargado",s:8.1,y:"S",o:"LatAm",i:"tt16416550",c:"Argent",d:"Cohn/Duprat",g:["Comedy","Drama"],yr:2022},
+            {t:"División Palermo",s:8.1,y:"S",o:"LatAm",i:"tt22026886",c:"Argent",d:"S. Korovsky",g:["Comedy"],yr:2023},
+            {t:"Iosi, the Spy",s:8.1,y:"S",o:"LatAm",i:"tt13446974",c:"Argent",d:"D. Burman",g:["Thriller","Drama"],yr:2022},
+            {t:"Sessão de Terapia",s:8.2,y:"S",o:"LatAm",i:"tt2403141",c:"Brazil",d:"S. Mello",g:["Drama"],yr:2012},
+            {t:"Aruanas",s:7.6,y:"S",o:"LatAm",i:"tt8749214",c:"Brazil",d:"E. Moretti",g:["Thriller","Drama"],yr:2019}
+        ];
+
+        let currentOrigins = [];
+        let currentGenres = [];
+        let currentType = 'Movie';
+        let filteredResults = [];
+        let currentBatchIndex = 0;
+        const BATCH_SIZE = 30;
+
+        function openCurtain() {
+            document.getElementById('start-content').classList.add('hidden');
+            document.getElementById('curtain').classList.add('open');
+            setTimeout(() => {
+                document.getElementById('selection-screen').classList.add('active');
+            }, 800);
+        }
+
+        function discoverContent() {
+            const originCheckboxes = document.querySelectorAll('input[name="origin"]:checked');
+            const genreCheckboxes = document.querySelectorAll('input[name="genre"]:checked');
+            const typeRadio = document.querySelector('input[name="type"]:checked');
+
+            if (originCheckboxes.length === 0 || genreCheckboxes.length === 0 || !typeRadio) {
+                document.getElementById('error-msg').innerText = "Selection Incomplete";
+                return;
+            }
+
+            currentOrigins = Array.from(originCheckboxes).map(cb => cb.value);
+            currentGenres = Array.from(genreCheckboxes).map(cb => cb.value);
+            currentType = typeRadio.value;
+
+            prepareResults();
+
+            document.getElementById('selection-screen').classList.remove('active');
+            document.getElementById('results-screen').classList.add('active');
+            
+            renderCurrentBatch();
+        }
+
+        function prepareResults() {
+            // Filter by selected origin(s), type, and Genre (OR logic)
+            filteredResults = db.filter(item => {
+                const matchOrigin = currentOrigins.includes(item.o);
+                const matchType = item.y === (currentType === 'Movie' ? 'M' : 'S');
+                const matchScore = item.s >= 6.0;
+                
+                // Check if item has ANY of the selected genres
+                const matchGenre = item.g ? item.g.some(g => currentGenres.includes(g)) : false;
+
+                return matchOrigin && matchType && matchScore && matchGenre;
+            });
+
+            // Sort by Score (Descending)
+            filteredResults.sort((a, b) => b.s - a.s);
+
+            currentBatchIndex = 0;
+        }
+
+        function loadMoreResults() {
+            const list = document.getElementById('results-list');
+            list.style.opacity = '0'; 
+            
+            setTimeout(() => {
+                currentBatchIndex += BATCH_SIZE;
+                if (currentBatchIndex >= filteredResults.length) {
+                    currentBatchIndex = 0;
+                }
+                renderCurrentBatch();
+                list.style.opacity = '1'; 
+            }, 200);
+        }
+
+        function renderCurrentBatch() {
+            const list = document.getElementById('results-list');
+            const summary = document.getElementById('filter-summary');
+            
+            list.innerHTML = ''; 
+            
+            const originLabels = currentOrigins.map(o => getOriginLabel(o));
+            let labelText = originLabels.join(', ');
+            if (labelText.length > 25) labelText = "Selected Regions"; 
+            summary.innerText = `${labelText} ${currentType}s`;
+
+            if (filteredResults.length === 0) {
+                list.innerHTML = '<li style="padding:20px; text-align:center; color:rgba(255,255,255,0.5)">The spirits are silent on this request.<br>Try another combination.</li>';
+                return;
+            }
+
+            const batch = filteredResults.slice(currentBatchIndex, currentBatchIndex + BATCH_SIZE);
+
+            batch.forEach((item, index) => {
+                const actualRank = currentBatchIndex + index + 1;
+
+                const li = document.createElement('div');
+                li.className = 'result-item';
+                
+                // Construct the HTML
+                li.innerHTML = `
+                    <div class="item-main">
+                        <div class="item-left">
+                            <span class="item-rank">${actualRank}</span>
+                            <a href="https://www.imdb.com/title/${item.i}" target="_blank" class="item-title-link" title="View on IMDB">${item.t}</a>
+                        </div>
+                        <div class="item-actions">
+                            <span class="item-country">${item.c}</span>
+                            <i class="fa-solid fa-tv tv-icon" onclick="openStreamingSearch('${item.t.replace(/'/g, "\\'")}')" title="Find where to stream"></i>
+                        </div>
+                    </div>
+                    <div class="item-director">Dir. ${item.d || 'Unknown'} • ${item.yr} <span style="margin-left:10px; opacity:0.6; font-size:0.7em;">★ ${item.s}</span></div>
+                `;
+                list.appendChild(li);
+            });
+
+            if (batch.length === 0) {
+                 currentBatchIndex = 0;
+                 renderCurrentBatch();
+            }
+        }
+
+        function openStreamingSearch(title) {
+            let country = "your area";
+            let format = currentType; 
+
+            try {
+                const regionCode = navigator.language.split('-')[1];
+                if (regionCode) {
+                    if (window.Intl && Intl.DisplayNames) {
+                        const regionNames = new Intl.DisplayNames(['en'], {type: 'region'});
+                        country = regionNames.of(regionCode);
+                    } else {
+                        country = regionCode; 
+                    }
+                } else {
+                    const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+                    if (timeZone) {
+                         country = timeZone.split('/')[1].replace(/_/g, ' '); 
+                    }
+                }
+            } catch (e) {
+                console.log("Location detection failed, using generic");
+            }
+
+            const query = `${title} ${format} streaming where to watch ${country}?`;
+            const url = `https://www.google.com/search?q=${encodeURIComponent(query)}`;
+            window.open(url, '_blank');
+        }
+
+        function getOriginLabel(code) {
+            const map = {
+                'US': 'US',
+                'Europe': 'Europe',
+                'AsiaAfrica': 'Asia/Afr',
+                'LatAm': 'LatAm'
+            };
+            return map[code] || code;
+        }
+
+        function resetApp() {
+            document.getElementById('results-screen').classList.remove('active');
+            document.getElementById('selection-screen').classList.add('active');
+            document.getElementById('results-list').innerHTML = '';
+        }
+    </script>
+</body>
+</html>
