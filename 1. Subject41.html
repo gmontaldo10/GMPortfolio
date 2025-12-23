@@ -1,0 +1,906 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Subject41</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #000;
+            color: #fff;
+            font-family: 'Courier New', Courier, monospace;
+            user-select: none;
+            touch-action: none;
+        }
+        #canvas-container {
+            width: 100vw;
+            height: 100vh;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1;
+            cursor: grab;
+        }
+        #canvas-container:active {
+            cursor: grabbing;
+        }
+        #ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 2;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        #start-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.9);
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            pointer-events: auto;
+        }
+        h1 {
+            font-size: 3rem;
+            letter-spacing: 10px;
+            text-shadow: 0 0 20px #f00;
+            margin-bottom: 10px;
+            color: #fff;
+            text-align: center;
+        }
+        .controls {
+            pointer-events: auto;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 20px;
+            border: 1px solid #333;
+            width: 300px;
+            transition: opacity 1s;
+            max-width: 90%;
+        }
+        .control-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 0.8rem;
+            color: #aaa;
+        }
+        input[type=range] {
+            width: 100%;
+            -webkit-appearance: none;
+            background: #333;
+            height: 5px;
+            outline: none;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 15px;
+            height: 15px;
+            background: #f00;
+            cursor: pointer;
+            border-radius: 50%;
+        }
+        /* Phase B Slider */
+        .angel-thumb::-webkit-slider-thumb {
+            background: #fff !important;
+            box-shadow: 0 0 10px #ffd700;
+        }
+        
+        #status {
+            font-size: 1.5rem;
+            color: #f00;
+            text-shadow: 0 0 10px #f00;
+            text-align: center;
+        }
+        #start-btn {
+            padding: 15px 40px;
+            font-size: 1.2rem;
+            background: #f00;
+            color: white;
+            border: none;
+            cursor: pointer;
+            letter-spacing: 2px;
+            font-family: 'Courier New', Courier, monospace;
+            transition: background 0.3s;
+        }
+        #start-btn:hover {
+            background: #900;
+            box-shadow: 0 0 20px #f00;
+        }
+        .scanline {
+            width: 100%;
+            height: 2px;
+            background: rgba(255,0,0,0.1);
+            position: absolute;
+            animation: scan 5s linear infinite;
+            pointer-events: none;
+            z-index: 5;
+        }
+        @keyframes scan {
+            0% { top: 0%; }
+            100% { top: 100%; }
+        }
+        #whiteout {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: white;
+            opacity: 0;
+            pointer-events: none;
+            z-index: 20;
+            transition: opacity 2s;
+        }
+
+        /* Death Screen / LED Termination styles from Game 3 */
+        #death-screen {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: black;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            flex-direction: column;
+        }
+        .led-sign {
+            font-size: 4rem;
+            color: #f00;
+            text-transform: uppercase;
+            border: 4px solid #f00;
+            padding: 20px;
+            background: #100;
+            box-shadow: 0 0 50px #f00, inset 0 0 20px #f00;
+            text-shadow: 0 0 10px #f00, 0 0 20px #f00;
+            animation: flicker 0.1s infinite;
+            text-align: center;
+        }
+        @keyframes flicker {
+            0% { opacity: 1; }
+            50% { opacity: 0.8; }
+            100% { opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+
+<div id="start-screen">
+    <h1>SUBJECT #41</h1>
+    <p style="color: #aaa; margin-bottom: 30px;">CONTAINMENT BREACH IMMINENT</p>
+    <p style="color: #555; font-size: 0.8rem;"> </p>
+    <button id="start-btn">INITIALIZE</button>
+</div>
+
+<div id="whiteout"></div>
+<div class="scanline"></div>
+
+<!-- Restored Death Screen -->
+<div id="death-screen">
+    <div class="led-sign">SYSTEM TERMINATED</div>
+    <div style="color: #500; margin-top: 20px; font-size: 1.2rem;">SIGNAL LOST</div>
+</div>
+
+<div id="ui-layer">
+    <div class="controls" id="controls-panel">
+        <!-- Phase A Controls -->
+        <div id="phase1-controls">
+            <div class="control-group">
+                <label>GROWTH RATE</label>
+                <input type="range" id="growthRate" min="0.1" max="2.0" step="0.1" value="0.5">
+            </div>
+            <div class="control-group">
+                <label>CHAOS (PSI LEVEL)</label>
+                <input type="range" id="chaosLevel" min="0" max="100" step="1" value="20">
+            </div>
+        </div>
+
+        <!-- Phase B Controls -->
+        <div id="phase2-controls" style="display:none;">
+            <div class="control-group">
+                <label style="color:#ffd700; text-shadow:0 0 5px #ffd700;">REVELATION (TRANSPARENCY)</label>
+                <!-- Granularity increased for gradual application -->
+                <input type="range" id="eggTransparency" class="angel-thumb" min="0" max="1" step="0.001" value="0">
+            </div>
+            <div style="font-size: 0.7rem; color: #888; text-align: center; margin-top: 10px;">DRAG TO ROTATE | TAP VOID FOR LIGHT</div>
+        </div>
+    </div>
+    <div id="status">CONTAINMENT STABLE...</div>
+</div>
+
+<div id="canvas-container"></div>
+
+<!-- Simplex Noise -->
+<script>
+(function(global){
+  var F2=0.5*(Math.sqrt(3.0)-1.0),G2=(3.0-Math.sqrt(3.0))/6.0,F3=1.0/3.0,G3=1.0/6.0,F4=(Math.sqrt(5.0)-1.0)/4.0,G4=(5.0-Math.sqrt(5.0))/20.0;
+  function SimplexNoise(random){if(!random)random=Math.random;this.p=new Uint8Array(256);this.perm=new Uint8Array(512);this.permMod12=new Uint8Array(512);for(var i=0;i<256;i++){this.p[i]=Math.floor(random()*256)}for(i=0;i<512;i++){this.perm[i]=this.p[i&255];this.permMod12[i]=this.perm[i]%12}}
+  SimplexNoise.prototype={grad3:new Float32Array([1,1,0,-1,1,0,1,-1,0,-1,-1,0,1,0,1,-1,0,1,1,0,-1,-1,0,-1,0,1,1,0,-1,1,0,1,-1,0,-1,-1]),grad4:new Float32Array([0,1,1,1,0,1,1,-1,0,1,-1,1,0,1,-1,-1,0,-1,1,1,0,-1,1,-1,0,-1,-1,1,0,-1,-1,-1,1,0,1,1,1,0,1,-1,1,0,-1,1,1,0,-1,-1,-1,0,1,1,-1,0,1,-1,-1,0,-1,1,-1,0,-1,-1,1,1,0,1,1,1,0,-1,1,-1,0,1,1,-1,0,-1,-1,1,0,1,-1,1,0,-1,-1,-1,0,1,-1,-1,0,-1,1,1,1,0,1,1,-1,0,1,-1,1,0,1,-1,-1,0,-1,1,1,0,-1,1,-1,0,-1,-1,1,0,-1,-1,-1,0]),noise3D:function(xin,yin,zin){return 0},noise4D:function(x,y,z,w){var perm=this.perm;var grad4=this.grad4;var n0,n1,n2,n3,n4;var s=(x+y+z+w)*F4;var i=Math.floor(x+s);var j=Math.floor(y+s);var k=Math.floor(z+s);var l=Math.floor(w+s);var t=(i+j+k+l)*G4;var X0=i-t;var Y0=j-t;var Z0=k-t;var W0=l-t;var x0=x-X0;var y0=y-Y0;var z0=z-Z0;var w0=w-W0;var rankx=0;var ranky=0;var rankz=0;var rankw=0;if(x0>y0)rankx++;else ranky++;if(x0>z0)rankx++;else rankz++;if(x0>w0)rankx++;else rankw++;if(y0>z0)ranky++;else rankz++;if(y0>w0)ranky++;else rankw++;if(z0>w0)rankz++;else rankw++;var i1,j1,k1,l1;var i2,j2,k2,l2;var i3,j3,k3,l3;i1=rankx>=3?1:0;j1=ranky>=3?1:0;k1=rankz>=3?1:0;l1=rankw>=3?1:0;i2=rankx>=2?1:0;j2=ranky>=2?1:0;k2=rankz>=2?1:0;l2=rankw>=2?1:0;i3=rankx>=1?1:0;j3=ranky>=1?1:0;k3=rankz>=1?1:0;l3=rankw>=1?1:0;var x1=x0-i1+G4;var y1=y0-j1+G4;var z1=z0-k1+G4;var w1=w0-l1+G4;var x2=x0-i2+2.0*G4;var y2=y0-j2+2.0*G4;var z2=z0-k2+2.0*G4;var w2=w0-l2+2.0*G4;var x3=x0-i3+3.0*G4;var y3=y0-j3+3.0*G4;var z3=z0-k3+3.0*G4;var w3=w0-l3+3.0*G4;var x4=x0-1.0+4.0*G4;var y4=y0-1.0+4.0*G4;var z4=z0-1.0+4.0*G4;var w4=w0-1.0+4.0*G4;var ii=i&255;var jj=j&255;var kk=k&255;var ll=l&255;var t0=0.6-x0*x0-y0*y0-z0*z0-w0*w0;if(t0<0)n0=0.0;else{var gi0=(perm[ii+perm[jj+perm[kk+perm[ll]]]]%32)*4;t0*=t0;n0=t0*t0*(grad4[gi0]*x0+grad4[gi0+1]*y0+grad4[gi0+2]*z0+grad4[gi0+3]*w0)}var t1=0.6-x1*x1-y1*y1-z1*z1-w1*w1;if(t1<0)n1=0.0;else{var gi1=(perm[ii+i1+perm[jj+j1+perm[kk+k1+perm[ll+l1]]]]%32)*4;t1*=t1;n1=t1*t1*(grad4[gi1]*x1+grad4[gi1+1]*y1+grad4[gi1+2]*z1+grad4[gi1+3]*w1)}var t2=0.6-x2*x2-y2*y2-z2*z2-w2*w2;if(t2<0)n2=0.0;else{var gi2=(perm[ii+i2+perm[jj+j2+perm[kk+k2+perm[ll+l2]]]]%32)*4;t2*=t2;n2=t2*t2*(grad4[gi2]*x2+grad4[gi2+1]*y2+grad4[gi2+2]*z2+grad4[gi2+3]*w2)}var t3=0.6-x3*x3-y3*y3-z3*z3-w3*w3;if(t3<0)n3=0.0;else{var gi3=(perm[ii+i3+perm[jj+j3+perm[kk+k3+perm[ll+l3]]]]%32)*4;t3*=t3;n3=t3*t3*(grad4[gi3]*x3+grad4[gi3+1]*y3+grad4[gi3+2]*z3+grad4[gi3+3]*w3)}var t4=0.6-x4*x4-y4*y4-z4*z4-w4*w4;if(t4<0)n4=0.0;else{var gi4=(perm[ii+1+perm[jj+1+perm[kk+1+perm[ll+1]]]]%32)*4;t4*=t4;n4=t4*t4*(grad4[gi4]*x4+grad4[gi4+1]*y4+grad4[gi4+2]*z4+grad4[gi4+3]*w4)}return 27.0*(n0+n1+n2+n3+n4)}};global.SimplexNoise=SimplexNoise})(window);
+</script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.0/three.min.js"></script>
+
+<script>
+// --- AUDIO ENGINE ---
+class AudioEngine {
+    constructor() {
+        this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+        this.masterGain = this.ctx.createGain();
+        this.masterGain.gain.value = 0.4;
+        this.masterGain.connect(this.ctx.destination);
+        this.nodes = [];
+    }
+
+    startTetsuoMode() {
+        this.ctx.resume();
+        this.stopAll();
+        // Dark drone cluster
+        const freqs = [55, 55.5, 110, 108, 164]; 
+        freqs.forEach((f, i) => {
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            const filter = this.ctx.createBiquadFilter();
+            osc.type = i % 2 === 0 ? 'sawtooth' : 'triangle';
+            osc.frequency.value = f;
+            filter.type = 'lowpass';
+            filter.frequency.value = 200;
+            filter.Q.value = 1;
+
+            osc.connect(filter);
+            filter.connect(gain);
+            gain.connect(this.masterGain);
+            
+            osc.start();
+            gain.gain.value = 0;
+            gain.gain.linearRampToValueAtTime(0.1, this.ctx.currentTime + 2);
+
+            this.nodes.push({osc, gain, filter, type: 'tetsuo'});
+        });
+    }
+
+    startAngelMode() {
+        this.stopAll('tetsuo'); // Fade out tetsuo only
+        const now = this.ctx.currentTime;
+
+        const chords = [523.25, 659.25, 783.99, 1046.50];
+        chords.forEach((f, i) => {
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            const panner = this.ctx.createStereoPanner();
+            
+            osc.type = 'sine';
+            osc.frequency.value = f;
+            
+            // Vibrato
+            const lfo = this.ctx.createOscillator();
+            lfo.frequency.value = 2 + Math.random();
+            const lfoGain = this.ctx.createGain();
+            lfoGain.gain.value = 5;
+            lfo.connect(lfoGain);
+            lfoGain.connect(osc.frequency);
+            lfo.start();
+
+            osc.connect(panner);
+            panner.connect(gain);
+            gain.connect(this.masterGain);
+            
+            panner.pan.value = (i / (chords.length-1)) * 2 - 1;
+
+            osc.start();
+            gain.gain.setValueAtTime(0, now);
+            gain.gain.linearRampToValueAtTime(0.05, now + 5);
+            
+            this.nodes.push({osc, gain, lfo, type: 'angel'});
+        });
+    }
+
+    playDeathSound() {
+        this.stopAll();
+        const now = this.ctx.currentTime;
+        
+        // Deep impact
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(100, now);
+        osc.frequency.exponentialRampToValueAtTime(10, now + 2);
+        
+        gain.gain.setValueAtTime(1, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 3);
+        
+        osc.connect(gain);
+        gain.connect(this.masterGain);
+        osc.start();
+        osc.stop(now + 3);
+        
+        // Noise burst
+        const bufferSize = this.ctx.sampleRate * 2;
+        const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for(let i=0; i<bufferSize; i++) data[i] = Math.random() * 2 - 1;
+        
+        const noise = this.ctx.createBufferSource();
+        noise.buffer = buffer;
+        const nGain = this.ctx.createGain();
+        nGain.gain.setValueAtTime(0.8, now);
+        nGain.gain.exponentialRampToValueAtTime(0.01, now + 1);
+        
+        noise.connect(nGain);
+        nGain.connect(this.masterGain);
+        noise.start();
+    }
+
+    playSecretLightSound() {
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        
+        // Mystical chime
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(880, now); // A5
+        osc.frequency.exponentialRampToValueAtTime(1760, now + 2); // A6
+        
+        gain.gain.setValueAtTime(0, now);
+        gain.gain.linearRampToValueAtTime(0.3, now + 0.1);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 3);
+        
+        osc.connect(gain);
+        gain.connect(this.masterGain);
+        osc.start();
+        osc.stop(now + 3.1);
+    }
+
+    modulateTetsuo(intensity) {
+        this.nodes.forEach(n => {
+            if(n.type === 'tetsuo') {
+                n.filter.frequency.linearRampToValueAtTime(200 + (intensity * 800), this.ctx.currentTime + 0.1);
+                n.osc.detune.linearRampToValueAtTime((Math.random() - 0.5) * intensity * 100, this.ctx.currentTime + 0.1);
+            }
+        });
+    }
+
+    stopAll(typeFilter = null) {
+        this.nodes.forEach((n) => {
+            if(!typeFilter || n.type === typeFilter) {
+                try {
+                    const now = this.ctx.currentTime;
+                    n.gain.gain.cancelScheduledValues(now);
+                    n.gain.gain.setValueAtTime(n.gain.gain.value, now);
+                    n.gain.gain.exponentialRampToValueAtTime(0.001, now + 2);
+                    setTimeout(() => { try{n.osc.stop();}catch(e){}}, 2100);
+                } catch(e){}
+            }
+        });
+    }
+}
+
+// --- MAIN GAME ---
+class Game {
+    constructor() {
+        this.scene = new THREE.Scene();
+        this.scene.background = new THREE.Color(0x000000);
+        this.scene.fog = new THREE.FogExp2(0x000000, 0.02);
+
+        this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        this.camera.position.set(0, 0, 5);
+
+        this.renderer = new THREE.WebGLRenderer({ antialias: true });
+        this.renderer.setSize(window.innerWidth, window.innerHeight);
+        this.renderer.shadowMap.enabled = true;
+        this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        
+        document.getElementById('canvas-container').appendChild(this.renderer.domElement);
+
+        this.raycaster = new THREE.Raycaster();
+        this.mouse = new THREE.Vector2();
+
+        this.simplex = new SimplexNoise();
+        this.time = 0;
+        this.phase = -1; 
+        
+        // Orbit state
+        this.isDragging = false;
+        this.previousMousePosition = { x: 0, y: 0 };
+        this.orbitAngleX = 0;
+        this.orbitAngleY = 0;
+
+        // Secret Light (Interaction)
+        this.secretLight = new THREE.PointLight(0xffaa00, 0, 20);
+        this.scene.add(this.secretLight);
+        this.secretLightDecay = 0;
+        
+        this.initTetsuo();
+        this.initParticles();
+        this.initAngel();
+
+        this.bindEvents();
+    }
+
+    bindEvents() {
+        window.addEventListener('resize', () => {
+            this.camera.aspect = window.innerWidth / window.innerHeight;
+            this.camera.updateProjectionMatrix();
+            this.renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        const canvas = document.getElementById('canvas-container');
+
+        // Keyboard Shortcuts
+        window.addEventListener('keydown', (e) => {
+            if (e.shiftKey && e.key.toLowerCase() === 'a') this.jumpToPhase(0);
+            if (e.shiftKey && e.key.toLowerCase() === 'b') this.jumpToPhase(2);
+        });
+        
+        // Mouse / Touch Handling
+        const onDown = (x, y) => {
+            if(this.phase === 2) {
+                // Raycast check for empty space click
+                this.mouse.x = (x / window.innerWidth) * 2 - 1;
+                this.mouse.y = -(y / window.innerHeight) * 2 + 1;
+                this.raycaster.setFromCamera(this.mouse, this.camera);
+                
+                const intersects = this.raycaster.intersectObjects(this.angelGroup.children, true);
+                if (intersects.length === 0) {
+                    this.triggerSecret();
+                } else {
+                    this.isDragging = true;
+                    this.previousMousePosition = { x, y };
+                }
+            }
+        };
+
+        const onMove = (x, y) => {
+            if (this.isDragging && this.phase >= 2) {
+                const deltaMove = {
+                    x: x - this.previousMousePosition.x,
+                    y: y - this.previousMousePosition.y
+                };
+
+                this.orbitAngleX -= deltaMove.x * 0.005;
+                this.orbitAngleY -= deltaMove.y * 0.005;
+                // Allow full rotation to see from all angles
+                this.orbitAngleY = Math.max(-Math.PI, Math.min(Math.PI, this.orbitAngleY));
+
+                this.previousMousePosition = { x, y };
+            }
+        };
+
+        const onUp = () => { this.isDragging = false; };
+
+        // Mouse Listeners
+        canvas.addEventListener('mousedown', (e) => onDown(e.clientX, e.clientY));
+        window.addEventListener('mousemove', (e) => onMove(e.clientX, e.clientY));
+        window.addEventListener('mouseup', onUp);
+
+        // Touch Listeners (Mobile Support)
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            onDown(e.touches[0].clientX, e.touches[0].clientY);
+        }, {passive: false});
+        
+        window.addEventListener('touchmove', (e) => {
+            e.preventDefault(); 
+            onMove(e.touches[0].clientX, e.touches[0].clientY);
+        }, {passive: false});
+        
+        window.addEventListener('touchend', onUp);
+    }
+
+    jumpToPhase(p) {
+        const wo = document.getElementById('whiteout');
+        wo.style.transition = 'opacity 0.5s';
+        wo.style.opacity = 1;
+
+        setTimeout(() => {
+            // Reset Scene
+            this.tetsuoMesh.visible = false;
+            this.particleSystem.visible = false;
+            this.angelGroup.visible = false;
+            this.scene.background = new THREE.Color(0x000000);
+            document.getElementById('phase1-controls').style.display = 'none';
+            document.getElementById('phase2-controls').style.display = 'none';
+            document.getElementById('death-screen').style.display = 'none';
+            document.getElementById('ui-layer').style.display = 'flex';
+
+            if(p === 0) { // Phase A
+                this.tetsuoMesh.visible = true;
+                this.tetsuoScale = 0.01; // A1: Start Small
+                this.tetsuoMesh.scale.setScalar(this.tetsuoScale);
+                document.getElementById('phase1-controls').style.display = 'block';
+                document.getElementById('status').innerText = "CONTAINMENT BREACH.";
+                if(audioSys) audioSys.startTetsuoMode();
+                this.camera.position.set(0,0,5);
+                this.camera.lookAt(0,0,0);
+                this.orbitAngleX = 0;
+                this.orbitAngleY = 0;
+            }
+            else if(p === 2) { // Phase B
+                this.angelGroup.visible = true;
+                document.getElementById('phase2-controls').style.display = 'block';
+                document.getElementById('eggTransparency').value = 0;
+                this.scene.background = new THREE.Color(0x050510);
+                document.getElementById('status').innerText = "PRESENCE DETECTED.";
+                if(audioSys) audioSys.startAngelMode();
+                
+                // Look from BELOW initially (negative Y angle)
+                this.orbitAngleX = 0; 
+                this.orbitAngleY = -1.2; // ~70 degrees down, looking up
+                
+                // Reset lights
+                this.rotatingPurpleLight.intensity = 0;
+            }
+
+            this.phase = p;
+            wo.style.opacity = 0;
+        }, 500);
+    }
+
+    endGame() {
+        this.phase = 99; // Terminated state
+        this.eggMesh.visible = false;
+        document.getElementById('status').innerText = "SIGNAL LOST.";
+        
+        if(audioSys) audioSys.playDeathSound();
+
+        // Immediate visual cut
+        document.getElementById('death-screen').style.display = 'flex';
+        document.getElementById('ui-layer').style.display = 'none';
+    }
+
+    triggerSecret() {
+        if(audioSys) audioSys.playSecretLightSound();
+        
+        const pos = this.camera.position.clone().multiplyScalar(0.8);
+        this.secretLight.position.copy(pos);
+        this.secretLight.intensity = 5;
+        
+        this.secretLightDecay = 2.0; 
+    }
+
+    updateCameraOrbit() {
+        const radius = 6;
+        const x = radius * Math.sin(this.orbitAngleX) * Math.cos(this.orbitAngleY);
+        const y = radius * Math.sin(this.orbitAngleY);
+        const z = radius * Math.cos(this.orbitAngleX) * Math.cos(this.orbitAngleY);
+        
+        this.camera.position.x += (x - this.camera.position.x) * 0.1;
+        this.camera.position.y += (y - this.camera.position.y) * 0.1;
+        this.camera.position.z += (z - this.camera.position.z) * 0.1;
+        this.camera.lookAt(0, 0, 0);
+    }
+
+    initTetsuo() {
+        this.lights = new THREE.Group();
+        this.lights.add(new THREE.AmbientLight(0x404040));
+        const pl = new THREE.PointLight(0xffffff, 1, 100);
+        pl.position.set(5, 5, 5);
+        this.lights.add(pl);
+        this.scene.add(this.lights);
+
+        this.tetsuoGeo = new THREE.SphereGeometry(1, 128, 128);
+        this.tetsuoBasePos = [];
+        const pos = this.tetsuoGeo.attributes.position;
+        for(let i=0; i<pos.count; i++) {
+            this.tetsuoBasePos.push(new THREE.Vector3(pos.getX(i), pos.getY(i), pos.getZ(i)));
+        }
+        
+        this.tetsuoMat = new THREE.MeshStandardMaterial({
+            color: 0xffcccc, roughness: 0.3, metalness: 0.2, emissive: 0x330000,
+            flatShading: false
+        });
+        this.tetsuoMesh = new THREE.Mesh(this.tetsuoGeo, this.tetsuoMat);
+        this.scene.add(this.tetsuoMesh);
+        
+        this.tetsuoScale = 0.01;
+    }
+
+    initParticles() {
+        const geo = new THREE.BufferGeometry();
+        const count = 3000;
+        const positions = new Float32Array(count * 3);
+        const velocities = [];
+        for(let i=0; i<count; i++) {
+            positions[i*3] = 0; positions[i*3+1] = 0; positions[i*3+2] = 0;
+            velocities.push(new THREE.Vector3((Math.random()-0.5), (Math.random()-0.5), (Math.random()-0.5)).normalize());
+        }
+        geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        this.particleMat = new THREE.PointsMaterial({color: 0xaaddff, size: 0.15, transparent: true, opacity: 0.8});
+        this.particleSystem = new THREE.Points(geo, this.particleMat);
+        this.particleVels = velocities;
+        this.particleSystem.visible = false;
+        this.scene.add(this.particleSystem);
+    }
+
+    initAngel() {
+        this.angelGroup = new THREE.Group();
+        this.angelGroup.visible = false;
+
+        // Body
+        const skinMat = new THREE.MeshStandardMaterial({color: 0xfffff0, roughness: 0.9});
+        const head = new THREE.Mesh(new THREE.SphereGeometry(0.5, 32, 32), skinMat);
+        head.position.y = 0.8;
+        this.angelGroup.add(head);
+
+        const body = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.8, 2, 16), new THREE.MeshStandardMaterial({color: 0xeeeeee, roughness: 1})); 
+        body.position.y = -0.5;
+        this.angelGroup.add(body);
+
+        // HANDS
+        const handGeo = new THREE.BoxGeometry(0.3, 0.1, 0.4);
+        const handMat = skinMat;
+        const leftHand = new THREE.Mesh(handGeo, handMat);
+        leftHand.position.set(-0.3, 0.2, 0.8); 
+        leftHand.rotation.z = -0.5;
+        leftHand.rotation.x = 0.5;
+        this.angelGroup.add(leftHand);
+        
+        const rightHand = new THREE.Mesh(handGeo, handMat);
+        rightHand.position.set(0.3, 0.2, 0.8);
+        rightHand.rotation.z = 0.5;
+        rightHand.rotation.x = 0.5;
+        this.angelGroup.add(rightHand);
+
+        // EYES
+        const eyeGeo = new THREE.CapsuleGeometry(0.15, 0.35, 4, 8);
+        const eyeMat = new THREE.MeshBasicMaterial({color: 0x553333});
+        
+        const leftEye = new THREE.Mesh(eyeGeo, eyeMat);
+        leftEye.rotation.z = Math.PI / 2;
+        leftEye.rotation.y = -0.3; 
+        leftEye.position.set(-0.22, 0.8, 0.42);
+        leftEye.scale.set(0.1, 1, 1);
+        this.angelGroup.add(leftEye);
+
+        const rightEye = new THREE.Mesh(eyeGeo, eyeMat);
+        rightEye.rotation.z = Math.PI / 2;
+        rightEye.rotation.y = 0.3;
+        rightEye.position.set(0.22, 0.8, 0.42);
+        rightEye.scale.set(0.1, 1, 1);
+        this.angelGroup.add(rightEye);
+
+        // HAIR (Significantly increased for "across and around screen" effect)
+        const hairMat = new THREE.MeshStandardMaterial({
+            color: 0xffaa00, // Golden Red
+            metalness: 0.6, 
+            roughness: 0.3
+        });
+        
+        // Scalp coverage
+        const scalpGeo = new THREE.SphereGeometry(0.52, 32, 16, 0, Math.PI*2, 0, Math.PI*0.6);
+        const scalp = new THREE.Mesh(scalpGeo, hairMat);
+        scalp.position.y = 0.8;
+        scalp.rotation.x = -0.2;
+        this.angelGroup.add(scalp);
+
+        // Increase strand count from 120 to 350
+        for(let i=0; i<350; i++) {
+            const angle = Math.random() * Math.PI * 2;
+            if(angle > -0.5 && angle < 0.5) continue; // keep face clear
+
+            const radius = 0.48;
+            const startX = Math.sin(angle) * radius;
+            const startZ = Math.cos(angle) * radius;
+            
+            const points = [];
+            points.push(new THREE.Vector3(startX, 1.2, startZ));
+            points.push(new THREE.Vector3(startX*1.3, 0.5, startZ*1.3));
+            
+            // Spread wider for "looking from below" spectacle
+            const flowX = (Math.random()-0.5)*5; // Wider spread
+            const flowZ = (Math.random()-0.5)*5;
+            const flowY = -4 - Math.random() * 8; // Varying lengths, very long
+
+            points.push(new THREE.Vector3(startX*3 + flowX, flowY/2, startZ*3 + flowZ));
+            points.push(new THREE.Vector3(startX*5 + flowX, flowY, startZ*5 + flowZ));
+            
+            const curve = new THREE.CatmullRomCurve3(points);
+            const tubeGeo = new THREE.TubeGeometry(curve, 16, 0.02 + Math.random()*0.03, 4, false);
+            const strand = new THREE.Mesh(tubeGeo, hairMat);
+            this.angelGroup.add(strand);
+        }
+
+        // Egg & Eye Structure
+        const eggGeo = new THREE.SphereGeometry(0.8, 64, 64);
+        eggGeo.scale(0.8, 1.2, 0.8);
+        this.eggShellMat = new THREE.MeshStandardMaterial({
+            color: 0x999999, roughness: 0.4, transparent: true, opacity: 1.0, side: THREE.DoubleSide
+        });
+        this.eggMesh = new THREE.Mesh(eggGeo, this.eggShellMat);
+        this.eggMesh.position.set(0, 0.5, 0.8);
+        this.angelGroup.add(this.eggMesh);
+
+        // The Eye inside the Egg
+        const eyeGroup = new THREE.Group();
+        this.eyeLids = new THREE.Group();
+        
+        const eyeBall = new THREE.Mesh(new THREE.SphereGeometry(0.5, 32, 32), new THREE.MeshBasicMaterial({color: 0xffffff}));
+        const pupil = new THREE.Mesh(new THREE.SphereGeometry(0.22, 32, 32), new THREE.MeshBasicMaterial({color: 0x000000})); 
+        pupil.position.z = 0.45;
+        
+        // Eyelids
+        const lidGeo = new THREE.SphereGeometry(0.52, 32, 16, 0, Math.PI*2, 0, Math.PI/2);
+        this.topLid = new THREE.Mesh(lidGeo, new THREE.MeshBasicMaterial({color:0xccaaaa}));
+        this.topLid.rotation.x = -Math.PI/2;
+        this.botLid = new THREE.Mesh(lidGeo, new THREE.MeshBasicMaterial({color:0xccaaaa}));
+        this.botLid.rotation.x = Math.PI/2;
+
+        eyeGroup.add(eyeBall);
+        eyeGroup.add(pupil);
+        eyeGroup.add(this.topLid);
+        eyeGroup.add(this.botLid);
+
+        // ROTATING PURPLE LIGHT (New Requirement)
+        this.rotatingLightPivot = new THREE.Group();
+        this.rotatingPurpleLight = new THREE.PointLight(0xaa00ff, 0, 2); // Start intensity 0
+        this.rotatingPurpleLight.position.set(0.6, 0, 0); // Offset from center
+        this.rotatingLightPivot.add(this.rotatingPurpleLight);
+        eyeGroup.add(this.rotatingLightPivot);
+
+        eyeGroup.position.copy(this.eggMesh.position);
+        eyeGroup.scale.setScalar(0.6); 
+        this.angelGroup.add(eyeGroup);
+        this.theEye = eyeGroup;
+
+        this.scene.add(this.angelGroup);
+        
+        this.blinkState = 0; 
+        this.blinkVal = 0;
+    }
+
+    start() {
+        this.jumpToPhase(0);
+        this.animate();
+    }
+
+    explode() {
+        this.phase = 1; 
+        const wo = document.getElementById('whiteout');
+        wo.style.opacity = 1;
+        
+        this.tetsuoMesh.visible = false;
+        this.particleSystem.visible = true;
+        this.particleSystem.position.copy(this.tetsuoMesh.position); 
+        
+        const pos = this.particleSystem.geometry.attributes.position;
+        for(let i=0; i<pos.count; i++) {
+            pos.setXYZ(i, (Math.random()-0.5)*this.tetsuoScale, (Math.random()-0.5)*this.tetsuoScale, (Math.random()-0.5)*this.tetsuoScale);
+        }
+        pos.needsUpdate = true;
+
+        document.getElementById('status').innerText = "SUBJECT DISSIPATED.";
+        
+        setTimeout(() => {
+            this.jumpToPhase(2);
+        }, 2000);
+    }
+
+    update(dt) {
+        this.time += dt;
+
+        // Secret light decay
+        if(this.secretLight.intensity > 0) {
+            this.secretLight.intensity -= this.secretLightDecay * dt * 5;
+            if(this.secretLight.intensity < 0) this.secretLight.intensity = 0;
+        }
+
+        if (this.phase === 0) {
+            // --- PHASE A ---
+            const rate = parseFloat(document.getElementById('growthRate').value);
+            const chaos = parseFloat(document.getElementById('chaosLevel').value);
+
+            this.tetsuoScale += (rate * dt * 0.1) * (1 + this.tetsuoScale * 0.1);
+            this.tetsuoMesh.scale.setScalar(this.tetsuoScale);
+
+            const pos = this.tetsuoGeo.attributes.position;
+            const noiseFreq = 1.5 + (chaos * 0.01);
+            const noiseAmp = 0.1 + (chaos * 0.005) + (this.tetsuoScale * 0.02); 
+            const timeSpeed = this.time * (1 + chaos * 0.02);
+
+            for(let i=0; i<pos.count; i++) {
+                const v = this.tetsuoBasePos[i];
+                let n = this.simplex.noise4D(v.x*noiseFreq, v.y*noiseFreq, v.z*noiseFreq, timeSpeed);
+                let n2 = this.simplex.noise4D(v.x*noiseFreq*2, v.y*noiseFreq*2, v.z*noiseFreq*2, timeSpeed*1.5) * 0.5;
+                const d = 1 + (n + n2) * noiseAmp;
+                pos.setXYZ(i, v.x*d, v.y*d, v.z*d);
+            }
+            pos.needsUpdate = true;
+            this.tetsuoGeo.computeVertexNormals();
+
+            const redFactor = Math.min(chaos/100, 1);
+            this.tetsuoMat.color.setHSL(0, 1, 0.8 - (redFactor * 0.6));
+            this.tetsuoMat.emissive.setHSL(0, 1, redFactor * 0.5);
+
+            if(audioSys) audioSys.modulateTetsuo(redFactor + (this.tetsuoScale * 0.05));
+
+            if(this.tetsuoScale > 10) this.explode();
+        }
+        else if (this.phase === 1) {
+            // --- PHASE A->B TRANSITION ---
+            const pos = this.particleSystem.geometry.attributes.position;
+            for(let i=0; i<pos.count; i++) {
+                const v = this.particleVels[i];
+                pos.setXYZ(i, pos.getX(i) + v.x*0.5, pos.getY(i) + v.y*0.5, pos.getZ(i) + v.z*0.5);
+            }
+            pos.needsUpdate = true;
+        }
+        else if (this.phase === 2) {
+            // --- PHASE B: ANGEL ---
+            this.updateCameraOrbit();
+            this.angelGroup.position.y = Math.sin(this.time) * 0.1;
+
+            const transp = parseFloat(document.getElementById('eggTransparency').value);
+            this.eggShellMat.opacity = 1.0 - transp;
+            
+            this.theEye.lookAt(this.camera.position);
+
+            // B3: Purple Light logic
+            // Only visible when transparency is high (> 0.5 start fading in)
+            if(transp > 0.5) {
+                const intensity = (transp - 0.5) * 4.0; // Scale 0 to 2
+                this.rotatingPurpleLight.intensity = intensity;
+            } else {
+                this.rotatingPurpleLight.intensity = 0;
+            }
+            // Rotation
+            this.rotatingLightPivot.rotation.z += dt * 2.0;
+            this.rotatingLightPivot.rotation.y += dt * 1.0;
+
+
+            // Blinking Eye
+            const blinkChance = 0.005 + (transp * 0.05); 
+            if(this.blinkState === 0 && Math.random() < blinkChance) {
+                this.blinkState = 1; 
+            }
+            
+            const blinkSpeed = 10 + (transp * 20);
+            if(this.blinkState === 1) {
+                this.blinkVal += dt * blinkSpeed;
+                if(this.blinkVal >= 1) { this.blinkVal = 1; this.blinkState = 2; }
+            } else if (this.blinkState === 2) {
+                this.blinkVal -= dt * blinkSpeed;
+                if(this.blinkVal <= 0) { this.blinkVal = 0; this.blinkState = 0; }
+            }
+
+            this.topLid.rotation.x = -Math.PI/2 + (this.blinkVal * (Math.PI/2));
+            this.botLid.rotation.x = Math.PI/2 - (this.blinkVal * (Math.PI/2));
+
+            // B1: TERMINATION (Red LED) when fully transparent
+            // Phase C removed.
+            if (transp >= 0.99) {
+                this.endGame();
+            }
+        }
+    }
+
+    animate() {
+        requestAnimationFrame(() => this.animate());
+        this.update(0.016);
+        this.renderer.render(this.scene, this.camera);
+    }
+}
+
+// Init
+let audioSys;
+let game;
+
+document.getElementById('start-btn').addEventListener('click', () => {
+    document.getElementById('start-screen').style.display = 'none';
+    audioSys = new AudioEngine();
+    game = new Game();
+    game.start();
+});
+</script>
+</body>
+</html>
