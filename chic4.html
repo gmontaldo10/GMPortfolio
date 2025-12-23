@@ -1,0 +1,3050 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CHICSHELF | Editorial Book Tracker</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@300;400;600&family=Bodoni+Moda:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    
+    <!-- React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    
+    <!-- Babel -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <!-- Firebase -->
+    <script type="module">
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+      import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+      import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+      
+      window.FirebaseSDK = { initializeApp, getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged, getFirestore, doc, setDoc, getDoc, collection, onSnapshot, updateDoc, deleteDoc };
+    </script>
+
+    <style>
+      body {
+        font-family: 'Montserrat', sans-serif;
+        -webkit-font-smoothing: antialiased;
+        overflow-x: hidden;
+      }
+      .font-serif { font-family: 'Playfair Display', serif; }
+      .font-high-fashion { font-family: 'Bodoni Moda', serif; }
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      
+      @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+      .animate-in { animation: fadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+      
+      @keyframes float {
+        0% { transform: translateY(0px); }
+        50% { transform: translateY(-10px); }
+        100% { transform: translateY(0px); }
+      }
+      .animate-float { animation: float 4s ease-in-out infinite; }
+
+      .star-rating { color: #eab308; }
+      .star-empty { color: #d1d5db; }
+      
+      @media (max-width: 640px) {
+        .mobile-header-text { font-size: 2.5rem; line-height: 1; }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+      const { useState, useEffect, useCallback, useMemo } = React;
+      const { initializeApp, getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged, getFirestore, doc, setDoc, getDoc, collection, onSnapshot, updateDoc, deleteDoc } = window.FirebaseSDK;
+
+      const THEME_CONFIG = {
+        runway: { bg: 'bg-[#d9e2d5]', text: 'text-[#2f3e2d]', accent: 'bg-[#5d6d53] text-white', border: 'border-[#2f3e2d]', cardBg: 'bg-[#e7eee4]' },
+        vogue: { bg: 'bg-[#ffffff]', text: 'text-[#000000]', accent: 'bg-[#ff0000] text-white', border: 'border-[#000000]', cardBg: 'bg-[#ffffff]' },
+        studio: { bg: 'bg-[#fff0f5]', text: 'text-[#4a0404]', accent: 'bg-[#800020] text-white', border: 'border-[#800020]', cardBg: 'bg-[#fffcfd]' },
+        dry: { bg: 'bg-[#f4e1d2]', text: 'text-[#7d4f50]', accent: 'bg-[#ac8e82] text-white', border: 'border-[#7d4f50]', cardBg: 'bg-[#faf3ed]' },
+      };
+
+      const PLACEHOLDER_COVERS = [
+        'https://images.unsplash.com/photo-1544947950-fa07a98d237f?auto=format&fit=crop&q=80&w=800',
+        'https://images.unsplash.com/photo-1589998059171-988d887df646?auto=format&fit=crop&q=80&w=800',
+        'https://images.unsplash.com/photo-1512820790803-83ca734da794?auto=format&fit=crop&q=80&w=800',
+      ];
+
+      const LucideIcon = ({ name, className = "" }) => {
+        const icons = {
+          download: <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>,
+          upload: <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>,
+          star: <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>,
+          chevronUp: <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="18 15 12 9 6 15"/></svg>,
+          chevronDown: <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"/></svg>,
+          edit: <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>,
+          bookOpen: <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" className="w-full h-full opacity-10"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>,
+          sortIcon: <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="7 15 12 20 17 15"/><polyline points="7 9 12 4 17 9"/></svg>
+        };
+        return <span className={className}>{icons[name] || null}</span>;
+      };
+
+      const StarRating = ({ rating, setRating, interactive = true }) => {
+        return (
+          <div className="flex gap-1">
+            {[1, 2, 3, 4, 5].map((s) => (
+              <button
+                key={s}
+                type="button"
+                onClick={() => interactive && setRating(s)}
+                className={`transition-all duration-200 ${s <= rating ? 'text-yellow-500 scale-110' : 'text-gray-300 opacity-40'} ${interactive ? 'hover:scale-125' : 'cursor-default'}`}
+              >
+                <LucideIcon name="star" />
+              </button>
+            ))}
+          </div>
+        );
+      };
+
+      const App = () => {
+        const [user, setUser] = useState(null);
+        const [books, setBooks] = useState([]);
+        const [currentTheme, setCurrentTheme] = useState('dry');
+        const [currentSection, setCurrentSection] = useState('library');
+        const [isAddingOrEditing, setIsAddingOrEditing] = useState(false);
+        const [editingBookId, setEditingBookId] = useState(null);
+        const [clusterBy, setClusterBy] = useState('author');
+        const [clusterFilterYear, setClusterFilterYear] = useState('');
+        const [sortConfig, setSortConfig] = useState({ key: 'createdAt', direction: 'desc' });
+
+        const [formState, setFormState] = useState({
+          title: '', author: '', month: '', year: new Date().getFullYear().toString(), genre: '', stars: 1, coverUrl: ''
+        });
+
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'chicshelf-standalone';
+        const firebaseConfigStr = typeof __firebase_config !== 'undefined' ? __firebase_config : null;
+        
+        let db = null;
+        let auth = null;
+
+        if (firebaseConfigStr) {
+          try {
+            const config = JSON.parse(firebaseConfigStr);
+            const app = initializeApp(config);
+            auth = getAuth(app);
+            db = getFirestore(app);
+          } catch(e) {
+            console.warn("Firebase failed to init.");
+          }
+        }
+
+        useEffect(() => {
+          if (!auth) {
+              setUser({ uid: 'local-user' });
+              return;
+          }
+          const initAuth = async () => {
+            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+              await signInWithCustomToken(auth, __initial_auth_token);
+            } else {
+              await signInAnonymously(auth);
+            }
+          };
+          initAuth();
+          const unsubscribe = onAuthStateChanged(auth, setUser);
+          return () => unsubscribe();
+        }, []);
+
+        useEffect(() => {
+          if (!user || !db) return;
+          const q = collection(db, 'artifacts', appId, 'users', user.uid, 'books');
+          const unsubscribe = onSnapshot(q, (snapshot) => {
+            const fetched = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            setBooks(fetched);
+          }, (err) => console.error("Firestore error:", err));
+          return () => unsubscribe();
+        }, [user]);
+
+        const theme = THEME_CONFIG[currentTheme] || THEME_CONFIG.dry;
+
+        const handleSubmit = async (e) => {
+          e.preventDefault();
+          if (!user || !formState.title || !formState.author) return;
+
+          const bookData = {
+            ...formState,
+            coverUrl: formState.coverUrl || PLACEHOLDER_COVERS[Math.floor(Math.random() * PLACEHOLDER_COVERS.length)],
+            updatedAt: Date.now(),
+            rankingOrder: formState.rankingOrder || Date.now()
+          };
+
+          if (db) {
+            if (editingBookId) {
+                await updateDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'books', editingBookId), bookData);
+            } else {
+                const newDoc = doc(collection(db, 'artifacts', appId, 'users', user.uid, 'books'));
+                await setDoc(newDoc, { ...bookData, createdAt: Date.now() });
+            }
+          } else {
+            if (editingBookId) {
+                setBooks(prev => prev.map(b => b.id === editingBookId ? {...b, ...bookData} : b));
+            } else {
+                setBooks(prev => [{...bookData, id: Date.now().toString() + Math.random(), createdAt: Date.now()}, ...prev]);
+            }
+          }
+
+          resetForm();
+          setIsAddingOrEditing(false);
+        };
+
+        const resetForm = () => {
+          setFormState({ title: '', author: '', month: '', year: new Date().getFullYear().toString(), genre: '', stars: 1, coverUrl: '' });
+          setEditingBookId(null);
+        };
+
+        const handleEdit = (book) => {
+          setFormState(book);
+          setEditingBookId(book.id);
+          setIsAddingOrEditing(true);
+        };
+
+        const handleDelete = async (id) => {
+          if (!user || !confirm("Delete this edition?")) return;
+          if (db) {
+            await deleteDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'books', id));
+          } else {
+            setBooks(prev => prev.filter(b => b.id !== id));
+            setIsAddingOrEditing(false);
+          }
+        };
+
+        const handleDownload = () => {
+          const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(books));
+          const downloadAnchorNode = document.createElement('a');
+          downloadAnchorNode.setAttribute("href", dataStr);
+          downloadAnchorNode.setAttribute("download", "chicshelf_backup.json");
+          document.body.appendChild(downloadAnchorNode);
+          downloadAnchorNode.click();
+          downloadAnchorNode.remove();
+        };
+
+        const handleUpload = (e) => {
+          const file = e.target.files[0];
+          if (!file) return;
+          const reader = new FileReader();
+          reader.onload = async (event) => {
+            try {
+              const imported = JSON.parse(event.target.result);
+              if (Array.isArray(imported)) {
+                const existingKeys = new Set(books.map(b => `${b.title.toLowerCase().trim()}|${b.author.toLowerCase().trim()}`));
+                const newBooks = imported.filter(b => {
+                  const key = `${b.title.toLowerCase().trim()}|${b.author.toLowerCase().trim()}`;
+                  return !existingKeys.has(key);
+                });
+
+                if (newBooks.length === 0) return;
+
+                if (db) {
+                    for (const b of newBooks) {
+                        const { id, ...cleanData } = b;
+                        const newDoc = doc(collection(db, 'artifacts', appId, 'users', user.uid, 'books'));
+                        await setDoc(newDoc, { ...cleanData, createdAt: Date.now() });
+                    }
+                } else {
+                    const uniqueNewBooks = newBooks.map(b => ({
+                      ...b, 
+                      id: Date.now().toString() + Math.random(), 
+                      createdAt: Date.now()
+                    }));
+                    setBooks(prev => [...uniqueNewBooks, ...prev]);
+                }
+              }
+            } catch (err) { console.error("Import failed", err); }
+          };
+          reader.readAsText(file);
+          e.target.value = '';
+        };
+
+        const handleSort = (key) => {
+          let direction = 'asc';
+          if (sortConfig.key === key && sortConfig.direction === 'asc') {
+            direction = 'desc';
+          }
+          setSortConfig({ key, direction });
+        };
+
+        const sortedBooks = useMemo(() => {
+          const sortable = [...books];
+          sortable.sort((a, b) => {
+            let aVal = a[sortConfig.key];
+            let bVal = b[sortConfig.key];
+
+            // Handle numeric strings like years
+            if (sortConfig.key === 'year' || sortConfig.key === 'stars') {
+              aVal = Number(aVal);
+              bVal = Number(bVal);
+            } else if (typeof aVal === 'string') {
+              aVal = aVal.toLowerCase();
+              bVal = bVal.toLowerCase();
+            }
+
+            if (aVal < bVal) return sortConfig.direction === 'asc' ? -1 : 1;
+            if (aVal > bVal) return sortConfig.direction === 'asc' ? 1 : -1;
+            return 0;
+          });
+          return sortable;
+        }, [books, sortConfig]);
+
+        const moveRanking = async (book, direction, yearGroup) => {
+          const group = books
+            .filter(b => b.year === yearGroup && (b.stars === 4 || b.stars === 5))
+            .sort((a, b) => (a.rankingOrder || 0) - (b.rankingOrder || 0));
+          
+          const idx = group.findIndex(b => b.id === book.id);
+          let targetId = null;
+          let targetOrder = null;
+          
+          if (direction === 'up' && idx > 0) {
+            targetId = group[idx - 1].id;
+            targetOrder = group[idx - 1].rankingOrder;
+          } else if (direction === 'down' && idx < group.length - 1) {
+            targetId = group[idx + 1].id;
+            targetOrder = group[idx + 1].rankingOrder;
+          }
+
+          if (targetId !== null) {
+            if (db) {
+                const currentOrder = book.rankingOrder;
+                await updateDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'books', book.id), { rankingOrder: targetOrder });
+                await updateDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'books', targetId), { rankingOrder: currentOrder });
+            } else {
+                setBooks(prev => prev.map(b => {
+                    if (b.id === book.id) return {...b, rankingOrder: targetOrder};
+                    if (b.id === targetId) return {...b, rankingOrder: book.rankingOrder};
+                    return b;
+                }));
+            }
+          }
+        };
+
+        const uniqueYears = useMemo(() => Array.from(new Set(books.map(b => b.year))).sort((a, b) => b - a), [books]);
+
+        return (
+          <div className={`min-h-screen transition-colors duration-500 ${theme.bg} ${theme.text} px-4 pb-12 pt-6 md:px-12 lg:px-24`}>
+            <header className={`mb-8 sticky top-0 ${theme.bg} z-50 pt-2`}>
+              <div className="flex justify-between items-center mb-6">
+                <h1 
+                  className="text-3xl sm:text-4xl md:text-8xl font-high-fashion font-bold tracking-tighter leading-none cursor-pointer mobile-header-text" 
+                  onClick={() => { setCurrentSection('library'); setIsAddingOrEditing(false); }}
+                >
+                  CHICSHELF
+                </h1>
+                <button onClick={() => { setIsAddingOrEditing(!isAddingOrEditing); if(!isAddingOrEditing) resetForm(); }} className={`px-4 py-2 border-2 ${theme.border} text-[9px] md:text-[10px] font-bold tracking-[0.2em] md:tracking-[0.3em] uppercase transition-all hover:invert ml-4 whitespace-nowrap`}>
+                  {isAddingOrEditing ? 'CLOSE' : 'NEW EDITION'}
+                </button>
+              </div>
+              <nav className={`border-y-2 ${theme.border} py-3 flex justify-center gap-4 md:gap-16 overflow-x-auto no-scrollbar`}>
+                {['library', 'list', 'cluster', 'ranking'].map((s) => (
+                  <button key={s} onClick={() => { setCurrentSection(s); setIsAddingOrEditing(false); }} className={`text-[9px] md:text-sm font-high-fashion tracking-[0.2em] uppercase transition-all whitespace-nowrap ${currentSection === s && !isAddingOrEditing ? 'underline underline-offset-8 italic scale-110' : 'opacity-40 hover:opacity-100'}`}>
+                    {s}
+                  </button>
+                ))}
+              </nav>
+            </header>
+
+            <main className="min-h-[60vh] relative">
+              {isAddingOrEditing ? (
+                <div className="max-w-2xl mx-auto py-8 animate-in">
+                  <h2 className="text-xl md:text-2xl font-high-fashion uppercase mb-12 text-center underline italic">{editingBookId ? 'Edit Edition' : 'New Edition'}</h2>
+                  <form onSubmit={handleSubmit} className="flex flex-col gap-8 px-2 md:px-0">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                      <div className="group">
+                        <label className="text-[10px] uppercase tracking-[0.2em] font-bold block mb-2 opacity-60">Title</label>
+                        <input type="text" required value={formState.title} onChange={e => setFormState({...formState, title: e.target.value})} className={`w-full bg-transparent border-b-2 ${theme.border} pb-2 focus:outline-none font-serif text-lg`} />
+                      </div>
+                      <div className="group">
+                        <label className="text-[10px] uppercase tracking-[0.2em] font-bold block mb-2 opacity-60">Author</label>
+                        <input type="text" required value={formState.author} onChange={e => setFormState({...formState, author: e.target.value})} className={`w-full bg-transparent border-b-2 ${theme.border} pb-2 focus:outline-none font-serif text-lg`} />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      <div>
+                        <label className="text-[10px] uppercase tracking-[0.2em] font-bold block mb-2 opacity-60">Month</label>
+                        <input type="text" placeholder="Jan" value={formState.month} onChange={e => setFormState({...formState, month: e.target.value})} className={`w-full bg-transparent border-b-2 ${theme.border} pb-2 focus:outline-none font-serif`} />
+                      </div>
+                      <div>
+                        <label className="text-[10px] uppercase tracking-[0.2em] font-bold block mb-2 opacity-60">Year</label>
+                        <input type="text" value={formState.year} onChange={e => setFormState({...formState, year: e.target.value})} className={`w-full bg-transparent border-b-2 ${theme.border} pb-2 focus:outline-none font-serif`} />
+                      </div>
+                      <div className="col-span-2">
+                        <label className="text-[10px] uppercase tracking-[0.2em] font-bold block mb-2 opacity-60">Genre</label>
+                        <input type="text" value={formState.genre} onChange={e => setFormState({...formState, genre: e.target.value})} className={`w-full bg-transparent border-b-2 ${theme.border} pb-2 focus:outline-none font-serif`} />
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap gap-12 items-end">
+                      <div className="flex-grow min-w-[200px]">
+                        <label className="text-[10px] uppercase tracking-[0.2em] font-bold block mb-2 opacity-60">Cover URL</label>
+                        <input type="url" value={formState.coverUrl} onChange={e => setFormState({...formState, coverUrl: e.target.value})} className={`w-full bg-transparent border-b-2 ${theme.border} pb-2 focus:outline-none font-serif text-xs md:text-sm`} />
+                      </div>
+                      <div>
+                        <label className="text-[10px] uppercase tracking-[0.2em] font-bold block mb-2 opacity-60">Rating</label>
+                        <StarRating rating={formState.stars} setRating={(s) => setFormState({...formState, stars: s})} />
+                      </div>
+                    </div>
+                    <div className="flex flex-col md:flex-row gap-4 mt-4">
+                        <button type="submit" className={`flex-grow py-5 text-[10px] md:text-xs tracking-[0.5em] font-bold uppercase transition-all ${theme.accent} hover:scale-[0.99] active:scale-95`}>
+                        {editingBookId ? 'UPDATE EDITION' : 'ADD TO COLLECTION'}
+                        </button>
+                        {editingBookId && (
+                            <button type="button" onClick={() => handleDelete(editingBookId)} className="py-5 px-6 border-2 border-red-500 text-red-500 text-[10px] font-bold uppercase hover:bg-red-500 hover:text-white transition-all">DELETE</button>
+                        )}
+                    </div>
+                  </form>
+                </div>
+              ) : (
+                <div className="animate-in">
+                  {currentSection === 'library' && (
+                    <div className="max-w-6xl mx-auto py-12 px-2">
+                      {books.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center py-24 md:py-32">
+                          <div className="w-48 h-48 md:w-64 md:h-64 mb-8 animate-float">
+                            <LucideIcon name="bookOpen" className="w-full h-full text-current" />
+                          </div>
+                          <p className="font-serif italic text-2xl md:text-4xl opacity-30 text-center px-4">The shelf is waiting for your story.</p>
+                          <button onClick={() => { setIsAddingOrEditing(true); resetForm(); }} className="mt-8 text-[10px] tracking-widest font-bold uppercase opacity-50 hover:opacity-100 underline underline-offset-8">Curate your first edition</button>
+                        </div>
+                      ) : (
+                        <>
+                          <div className="flex flex-wrap justify-center items-end gap-2 px-4">
+                            {[...books].sort((a,b) => (b.createdAt || 0) - (a.createdAt || 0)).map((book) => (
+                              <div key={book.id} onClick={() => handleEdit(book)} className="relative group cursor-pointer transition-all duration-300 hover:-translate-y-8 hover:z-10">
+                                <div className={`shadow-xl border-r-2 border-black/10 overflow-hidden ${theme.border} border-t border-l`}>
+                                  <img src={book.coverUrl} className="w-14 sm:w-20 md:w-32 h-40 sm:h-56 md:h-80 object-cover" />
+                                </div>
+                                <div className="absolute inset-0 bg-black/80 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-4 pointer-events-none">
+                                  <p className="text-[8px] md:text-[10px] text-white font-bold uppercase tracking-tight line-clamp-2">{book.title}</p>
+                                  <p className="text-[7px] md:text-[8px] text-white/70 italic font-serif mt-1">{book.author}</p>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                          <div className={`w-full h-6 mt-[-4px] border-t-4 border-x-4 ${theme.border} opacity-20 bg-black/10`}></div>
+                        </>
+                      )}
+                    </div>
+                  )}
+
+                  {currentSection === 'list' && (
+                    <div className="max-w-5xl mx-auto px-2">
+                      <div className="overflow-x-auto no-scrollbar mb-4 border-b-2 border-black/10">
+                        <table className="w-full text-left border-collapse min-w-[600px]">
+                          <thead>
+                            <tr className={`text-[9px] md:text-[10px] uppercase tracking-[0.3em] font-bold border-b-2 ${theme.border}`}>
+                              {[
+                                { key: 'title', label: 'Title' },
+                                { key: 'author', label: 'Author' },
+                                { key: 'year', label: 'Year' },
+                                { key: 'genre', label: 'Genre' },
+                                { key: 'stars', label: 'Rating' }
+                              ].map(col => (
+                                <th key={col.key} className="pb-4 cursor-pointer hover:opacity-60 transition-opacity" onClick={() => handleSort(col.key)}>
+                                  <div className="flex items-center gap-1">
+                                    {col.label}
+                                    <LucideIcon name="sortIcon" className={`opacity-40 ${sortConfig.key === col.key ? 'opacity-100' : ''}`} />
+                                  </div>
+                                </th>
+                              ))}
+                              <th className="pb-4 text-center">Edit</th>
+                            </tr>
+                          </thead>
+                          <tbody className="font-serif text-sm">
+                            {sortedBooks.map(book => (
+                              <tr key={book.id} className={`group border-b ${theme.border} hover:bg-black/5 transition-colors`}>
+                                <td className="py-4 font-bold uppercase tracking-tight pr-4">{book.title}</td>
+                                <td className="py-4 italic opacity-70 pr-4">{book.author}</td>
+                                <td className="py-4 pr-4">{book.year}</td>
+                                <td className="py-4 opacity-60 text-[10px] md:text-xs pr-4">{book.genre}</td>
+                                <td className="py-4 pr-4"><StarRating rating={book.stars} interactive={false} /></td>
+                                <td className="py-4 text-center">
+                                  <button onClick={() => handleEdit(book)} className="p-2 opacity-30 group-hover:opacity-100 hover:scale-125 transition-all inline-block">
+                                    <LucideIcon name="edit" />
+                                  </button>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                      <div className="flex justify-end gap-3 pb-8 pt-4 pr-2">
+                        <button onClick={handleDownload} title="Download Collection" className={`p-3 border-2 ${theme.border} rounded-full bg-transparent hover:invert transition-all flex items-center justify-center`}><LucideIcon name="download" /></button>
+                        <label title="Upload Collection" className={`p-3 border-2 ${theme.border} rounded-full bg-transparent hover:invert transition-all flex items-center justify-center cursor-pointer`}>
+                          <LucideIcon name="upload" />
+                          <input type="file" className="hidden" accept=".json" onChange={handleUpload} />
+                        </label>
+                      </div>
+                    </div>
+                  )}
+
+                  {currentSection === 'cluster' && (
+                    <div className="max-w-6xl mx-auto px-4">
+                      <div className="flex flex-col items-center gap-6 mb-12">
+                        <div className="flex items-center gap-4">
+                          <button onClick={() => setClusterBy('author')} className={`w-4 h-4 rounded-full border-2 ${theme.border} ${clusterBy === 'author' ? 'bg-black' : ''}`} title="By Author"></button>
+                          <span className="text-[10px] uppercase tracking-widest font-bold">Group By</span>
+                          <button onClick={() => setClusterBy('genre')} className={`w-4 h-4 rounded-full border-2 ${theme.border} ${clusterBy === 'genre' ? 'bg-black' : ''}`} title="By Genre"></button>
+                        </div>
+                        <select value={clusterFilterYear} onChange={e => setClusterFilterYear(e.target.value)} className="bg-transparent border-b border-black text-[10px] uppercase tracking-widest font-bold focus:outline-none p-1">
+                          <option value="">All Years</option>
+                          {uniqueYears.map(y => <option key={y} value={y}>{y}</option>)}
+                        </select>
+                      </div>
+                      <div className="flex flex-wrap gap-12 md:gap-24 justify-center py-8">
+                        {(() => {
+                          const grouped = books.filter(b => !clusterFilterYear || b.year === clusterFilterYear).reduce((acc, b) => {
+                            const key = clusterBy === 'author' ? b.author : (b.genre || 'Uncategorized');
+                            if (!acc[key]) acc[key] = [];
+                            acc[key].push(b);
+                            return acc;
+                          }, {});
+                          
+                          const counts = Object.values(grouped).map(arr => arr.length);
+                          const maxCount = Math.max(...counts, 1);
+                          const minSize = 100;
+                          const maxSize = 250;
+
+                          return Object.entries(grouped).map(([group, groupBooks]) => {
+                            const relativeSize = minSize + ((groupBooks.length / maxCount) * (maxSize - minSize));
+                            
+                            return (
+                              <div key={group} className="flex flex-col items-center max-w-[200px]">
+                                <div 
+                                  style={{ width: `${relativeSize}px`, height: `${relativeSize}px` }}
+                                  className={`rounded-full border-2 ${theme.border} flex items-center justify-center p-4 text-center group hover:scale-105 transition-all shadow-lg bg-black/5 mb-4`}
+                                >
+                                  <span className="font-high-fashion font-bold leading-none uppercase tracking-tighter text-[10px] md:text-xs">
+                                    {group}<br/><span className="opacity-40 italic font-serif text-[8px]">Vol. {groupBooks.length}</span>
+                                  </span>
+                                </div>
+                                <div className="flex flex-col items-center gap-1 text-center">
+                                  {groupBooks.map(b => (
+                                    <span key={b.id} className="text-[7px] uppercase tracking-wider opacity-40 hover:opacity-100 transition-opacity">
+                                      {b.title}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                            );
+                          });
+                        })()}
+                      </div>
+                    </div>
+                  )}
+
+                  {currentSection === 'ranking' && (
+                    <div className="max-w-3xl mx-auto py-8 px-4">
+                      {uniqueYears.length === 0 ? (
+                        <p className="text-center font-serif italic opacity-30 py-24">No top editions to rank yet.</p>
+                      ) : (
+                        uniqueYears.map(year => {
+                          const rankedBooks = books
+                            .filter(b => b.year === year && (b.stars === 4 || b.stars === 5))
+                            .sort((a, b) => (a.rankingOrder || 0) - (b.rankingOrder || 0));
+                          
+                          if (rankedBooks.length === 0) return null;
+
+                          return (
+                            <div key={year} className="mb-16">
+                              <h3 className="text-3xl md:text-4xl font-high-fashion italic border-b-2 border-black/10 pb-4 mb-8">{year}</h3>
+                              <div className="flex flex-col gap-6 md:gap-8">
+                                {rankedBooks.map((book, idx) => (
+                                  <div key={book.id} className="flex flex-col md:flex-row md:items-center gap-4 md:gap-6 group relative">
+                                    <div className="flex items-center gap-4">
+                                      <span className="text-3xl md:text-4xl font-high-fashion opacity-20 w-8 md:w-12">{idx + 1}</span>
+                                      <div className="flex-grow">
+                                        <h4 className="font-bold uppercase text-base md:text-lg leading-tight line-clamp-1">{book.title}</h4>
+                                        <p className="font-serif italic text-xs md:text-sm opacity-60">by {book.author}</p>
+                                      </div>
+                                    </div>
+                                    <div className="flex items-center justify-between md:justify-end gap-6 border-t md:border-none pt-2 md:pt-0 border-black/5">
+                                       <StarRating rating={book.stars} interactive={false} />
+                                       <div className="flex items-center gap-4 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
+                                          <button onClick={() => moveRanking(book, 'up', year)} className="p-1 hover:scale-125"><LucideIcon name="chevronUp" /></button>
+                                          <button onClick={() => moveRanking(book, 'down', year)} className="p-1 hover:scale-125"><LucideIcon name="chevronDown" /></button>
+                                       </div>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
+                  )}
+                </div>
+          <!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CHICSHELF | Editorial Book Tracker</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@300;400;600&family=Bodoni+Moda:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    
+    <!-- React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    
+    <!-- Babel -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <!-- Firebase -->
+    <script type="module">
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+      import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+      import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+      
+      window.FirebaseSDK = { initializeApp, getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged, getFirestore, doc, setDoc, getDoc, collection, onSnapshot, updateDoc, deleteDoc };
+    </script>
+
+    <style>
+      body {
+        font-family: 'Montserrat', sans-serif;
+        -webkit-font-smoothing: antialiased;
+        overflow-x: hidden;
+      }
+      .font-serif { font-family: 'Playfair Display', serif; }
+      .font-high-fashion { font-family: 'Bodoni Moda', serif; }
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      
+      @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+      .animate-in { animation: fadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+      
+      @keyframes float {
+        0% { transform: translateY(0px); }
+        50% { transform: translateY(-10px); }
+        100% { transform: translateY(0px); }
+      }
+      .animate-float { animation: float 4s ease-in-out infinite; }
+
+      .star-rating { color: #eab308; }
+      .star-empty { color: #d1d5db; }
+      
+      @media (max-width: 640px) {
+        .mobile-header-text { font-size: 2.5rem; line-height: 1; }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+      const { useState, useEffect, useCallback, useMemo } = React;
+      const { initializeApp, getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged, getFirestore, doc, setDoc, getDoc, collection, onSnapshot, updateDoc, deleteDoc } = window.FirebaseSDK;
+
+      const THEME_CONFIG = {
+        runway: { bg: 'bg-[#d9e2d5]', text: 'text-[#2f3e2d]', accent: 'bg-[#5d6d53] text-white', border: 'border-[#2f3e2d]', cardBg: 'bg-[#e7eee4]' },
+        vogue: { bg: 'bg-[#ffffff]', text: 'text-[#000000]', accent: 'bg-[#ff0000] text-white', border: 'border-[#000000]', cardBg: 'bg-[#ffffff]' },
+        studio: { bg: 'bg-[#fff0f5]', text: 'text-[#4a0404]', accent: 'bg-[#800020] text-white', border: 'border-[#800020]', cardBg: 'bg-[#fffcfd]' },
+        dry: { bg: 'bg-[#f4e1d2]', text: 'text-[#7d4f50]', accent: 'bg-[#ac8e82] text-white', border: 'border-[#7d4f50]', cardBg: 'bg-[#faf3ed]' },
+      };
+
+      const PLACEHOLDER_COVERS = [
+        'https://images.unsplash.com/photo-1544947950-fa07a98d237f?auto=format&fit=crop&q=80&w=800',
+        'https://images.unsplash.com/photo-1589998059171-988d887df646?auto=format&fit=crop&q=80&w=800',
+        'https://images.unsplash.com/photo-1512820790803-83ca734da794?auto=format&fit=crop&q=80&w=800',
+      ];
+
+      const LucideIcon = ({ name, className = "" }) => {
+        const icons = {
+          download: <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>,
+          upload: <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>,
+          star: <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>,
+          chevronUp: <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="18 15 12 9 6 15"/></svg>,
+          chevronDown: <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"/></svg>,
+          edit: <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>,
+          bookOpen: <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" className="w-full h-full opacity-10"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>,
+          sortIcon: <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="7 15 12 20 17 15"/><polyline points="7 9 12 4 17 9"/></svg>
+        };
+        return <span className={className}>{icons[name] || null}</span>;
+      };
+
+      const StarRating = ({ rating, setRating, interactive = true }) => {
+        return (
+          <div className="flex gap-1">
+            {[1, 2, 3, 4, 5].map((s) => (
+              <button
+                key={s}
+                type="button"
+                onClick={() => interactive && setRating(s)}
+                className={`transition-all duration-200 ${s <= rating ? 'text-yellow-500 scale-110' : 'text-gray-300 opacity-40'} ${interactive ? 'hover:scale-125' : 'cursor-default'}`}
+              >
+                <LucideIcon name="star" />
+              </button>
+            ))}
+          </div>
+        );
+      };
+
+      const App = () => {
+        const [user, setUser] = useState(null);
+        const [books, setBooks] = useState([]);
+        const [currentTheme, setCurrentTheme] = useState('dry');
+        const [currentSection, setCurrentSection] = useState('library');
+        const [isAddingOrEditing, setIsAddingOrEditing] = useState(false);
+        const [editingBookId, setEditingBookId] = useState(null);
+        const [clusterBy, setClusterBy] = useState('author');
+        const [clusterFilterYear, setClusterFilterYear] = useState('');
+        const [sortConfig, setSortConfig] = useState({ key: 'createdAt', direction: 'desc' });
+
+        const [formState, setFormState] = useState({
+          title: '', author: '', month: '', year: new Date().getFullYear().toString(), genre: '', stars: 1, coverUrl: ''
+        });
+
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'chicshelf-standalone';
+        const firebaseConfigStr = typeof __firebase_config !== 'undefined' ? __firebase_config : null;
+        
+        let db = null;
+        let auth = null;
+
+        if (firebaseConfigStr) {
+          try {
+            const config = JSON.parse(firebaseConfigStr);
+            const app = initializeApp(config);
+            auth = getAuth(app);
+            db = getFirestore(app);
+          } catch(e) {
+            console.warn("Firebase failed to init.");
+          }
+        }
+
+        useEffect(() => {
+          if (!auth) {
+              setUser({ uid: 'local-user' });
+              return;
+          }
+          const initAuth = async () => {
+            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+              await signInWithCustomToken(auth, __initial_auth_token);
+            } else {
+              await signInAnonymously(auth);
+            }
+          };
+          initAuth();
+          const unsubscribe = onAuthStateChanged(auth, setUser);
+          return () => unsubscribe();
+        }, []);
+
+        useEffect(() => {
+          if (!user || !db) return;
+          const q = collection(db, 'artifacts', appId, 'users', user.uid, 'books');
+          const unsubscribe = onSnapshot(q, (snapshot) => {
+            const fetched = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            setBooks(fetched);
+          }, (err) => console.error("Firestore error:", err));
+          return () => unsubscribe();
+        }, [user]);
+
+        const theme = THEME_CONFIG[currentTheme] || THEME_CONFIG.dry;
+
+        const handleSubmit = async (e) => {
+          e.preventDefault();
+          if (!user || !formState.title || !formState.author) return;
+
+          const bookData = {
+            ...formState,
+            coverUrl: formState.coverUrl || PLACEHOLDER_COVERS[Math.floor(Math.random() * PLACEHOLDER_COVERS.length)],
+            updatedAt: Date.now(),
+            rankingOrder: formState.rankingOrder || Date.now()
+          };
+
+          if (db) {
+            if (editingBookId) {
+                await updateDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'books', editingBookId), bookData);
+            } else {
+                const newDoc = doc(collection(db, 'artifacts', appId, 'users', user.uid, 'books'));
+                await setDoc(newDoc, { ...bookData, createdAt: Date.now() });
+            }
+          } else {
+            if (editingBookId) {
+                setBooks(prev => prev.map(b => b.id === editingBookId ? {...b, ...bookData} : b));
+            } else {
+                setBooks(prev => [{...bookData, id: Date.now().toString() + Math.random(), createdAt: Date.now()}, ...prev]);
+            }
+          }
+
+          resetForm();
+          setIsAddingOrEditing(false);
+        };
+
+        const resetForm = () => {
+          setFormState({ title: '', author: '', month: '', year: new Date().getFullYear().toString(), genre: '', stars: 1, coverUrl: '' });
+          setEditingBookId(null);
+        };
+
+        const handleEdit = (book) => {
+          setFormState(book);
+          setEditingBookId(book.id);
+          setIsAddingOrEditing(true);
+        };
+
+        const handleDelete = async (id) => {
+          if (!user || !confirm("Delete this edition?")) return;
+          if (db) {
+            await deleteDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'books', id));
+          } else {
+            setBooks(prev => prev.filter(b => b.id !== id));
+            setIsAddingOrEditing(false);
+          }
+        };
+
+        const handleDownload = () => {
+          const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(books));
+          const downloadAnchorNode = document.createElement('a');
+          downloadAnchorNode.setAttribute("href", dataStr);
+          downloadAnchorNode.setAttribute("download", "chicshelf_backup.json");
+          document.body.appendChild(downloadAnchorNode);
+          downloadAnchorNode.click();
+          downloadAnchorNode.remove();
+        };
+
+        const handleUpload = (e) => {
+          const file = e.target.files[0];
+          if (!file) return;
+          const reader = new FileReader();
+          reader.onload = async (event) => {
+            try {
+              const imported = JSON.parse(event.target.result);
+              if (Array.isArray(imported)) {
+                const existingKeys = new Set(books.map(b => `${b.title.toLowerCase().trim()}|${b.author.toLowerCase().trim()}`));
+                const newBooks = imported.filter(b => {
+                  const key = `${b.title.toLowerCase().trim()}|${b.author.toLowerCase().trim()}`;
+                  return !existingKeys.has(key);
+                });
+
+                if (newBooks.length === 0) return;
+
+                if (db) {
+                    for (const b of newBooks) {
+                        const { id, ...cleanData } = b;
+                        const newDoc = doc(collection(db, 'artifacts', appId, 'users', user.uid, 'books'));
+                        await setDoc(newDoc, { ...cleanData, createdAt: Date.now() });
+                    }
+                } else {
+                    const uniqueNewBooks = newBooks.map(b => ({
+                      ...b, 
+                      id: Date.now().toString() + Math.random(), 
+                      createdAt: Date.now()
+                    }));
+                    setBooks(prev => [...uniqueNewBooks, ...prev]);
+                }
+              }
+            } catch (err) { console.error("Import failed", err); }
+          };
+          reader.readAsText(file);
+          e.target.value = '';
+        };
+
+        const handleSort = (key) => {
+          let direction = 'asc';
+          if (sortConfig.key === key && sortConfig.direction === 'asc') {
+            direction = 'desc';
+          }
+          setSortConfig({ key, direction });
+        };
+
+        const sortedBooks = useMemo(() => {
+          const sortable = [...books];
+          sortable.sort((a, b) => {
+            let aVal = a[sortConfig.key];
+            let bVal = b[sortConfig.key];
+
+            // Handle numeric strings like years
+            if (sortConfig.key === 'year' || sortConfig.key === 'stars') {
+              aVal = Number(aVal);
+              bVal = Number(bVal);
+            } else if (typeof aVal === 'string') {
+              aVal = aVal.toLowerCase();
+              bVal = bVal.toLowerCase();
+            }
+
+            if (aVal < bVal) return sortConfig.direction === 'asc' ? -1 : 1;
+            if (aVal > bVal) return sortConfig.direction === 'asc' ? 1 : -1;
+            return 0;
+          });
+          return sortable;
+        }, [books, sortConfig]);
+
+        const moveRanking = async (book, direction, yearGroup) => {
+          const group = books
+            .filter(b => b.year === yearGroup && (b.stars === 4 || b.stars === 5))
+            .sort((a, b) => (a.rankingOrder || 0) - (b.rankingOrder || 0));
+          
+          const idx = group.findIndex(b => b.id === book.id);
+          let targetId = null;
+          let targetOrder = null;
+          
+          if (direction === 'up' && idx > 0) {
+            targetId = group[idx - 1].id;
+            targetOrder = group[idx - 1].rankingOrder;
+          } else if (direction === 'down' && idx < group.length - 1) {
+            targetId = group[idx + 1].id;
+            targetOrder = group[idx + 1].rankingOrder;
+          }
+
+          if (targetId !== null) {
+            if (db) {
+                const currentOrder = book.rankingOrder;
+                await updateDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'books', book.id), { rankingOrder: targetOrder });
+                await updateDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'books', targetId), { rankingOrder: currentOrder });
+            } else {
+                setBooks(prev => prev.map(b => {
+                    if (b.id === book.id) return {...b, rankingOrder: targetOrder};
+                    if (b.id === targetId) return {...b, rankingOrder: book.rankingOrder};
+                    return b;
+                }));
+            }
+          }
+        };
+
+        const uniqueYears = useMemo(() => Array.from(new Set(books.map(b => b.year))).sort((a, b) => b - a), [books]);
+
+        return (
+          <div className={`min-h-screen transition-colors duration-500 ${theme.bg} ${theme.text} px-4 pb-12 pt-6 md:px-12 lg:px-24`}>
+            <header className={`mb-8 sticky top-0 ${theme.bg} z-50 pt-2`}>
+              <div className="flex justify-between items-center mb-6">
+                <h1 
+                  className="text-3xl sm:text-4xl md:text-8xl font-high-fashion font-bold tracking-tighter leading-none cursor-pointer mobile-header-text" 
+                  onClick={() => { setCurrentSection('library'); setIsAddingOrEditing(false); }}
+                >
+                  CHICSHELF
+                </h1>
+                <button onClick={() => { setIsAddingOrEditing(!isAddingOrEditing); if(!isAddingOrEditing) resetForm(); }} className={`px-4 py-2 border-2 ${theme.border} text-[9px] md:text-[10px] font-bold tracking-[0.2em] md:tracking-[0.3em] uppercase transition-all hover:invert ml-4 whitespace-nowrap`}>
+                  {isAddingOrEditing ? 'CLOSE' : 'NEW EDITION'}
+                </button>
+              </div>
+              <nav className={`border-y-2 ${theme.border} py-3 flex justify-center gap-4 md:gap-16 overflow-x-auto no-scrollbar`}>
+                {['library', 'list', 'cluster', 'ranking'].map((s) => (
+                  <button key={s} onClick={() => { setCurrentSection(s); setIsAddingOrEditing(false); }} className={`text-[9px] md:text-sm font-high-fashion tracking-[0.2em] uppercase transition-all whitespace-nowrap ${currentSection === s && !isAddingOrEditing ? 'underline underline-offset-8 italic scale-110' : 'opacity-40 hover:opacity-100'}`}>
+                    {s}
+                  </button>
+                ))}
+              </nav>
+            </header>
+
+            <main className="min-h-[60vh] relative">
+              {isAddingOrEditing ? (
+                <div className="max-w-2xl mx-auto py-8 animate-in">
+                  <h2 className="text-xl md:text-2xl font-high-fashion uppercase mb-12 text-center underline italic">{editingBookId ? 'Edit Edition' : 'New Edition'}</h2>
+                  <form onSubmit={handleSubmit} className="flex flex-col gap-8 px-2 md:px-0">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                      <div className="group">
+                        <label className="text-[10px] uppercase tracking-[0.2em] font-bold block mb-2 opacity-60">Title</label>
+                        <input type="text" required value={formState.title} onChange={e => setFormState({...formState, title: e.target.value})} className={`w-full bg-transparent border-b-2 ${theme.border} pb-2 focus:outline-none font-serif text-lg`} />
+                      </div>
+                      <div className="group">
+                        <label className="text-[10px] uppercase tracking-[0.2em] font-bold block mb-2 opacity-60">Author</label>
+                        <input type="text" required value={formState.author} onChange={e => setFormState({...formState, author: e.target.value})} className={`w-full bg-transparent border-b-2 ${theme.border} pb-2 focus:outline-none font-serif text-lg`} />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      <div>
+                        <label className="text-[10px] uppercase tracking-[0.2em] font-bold block mb-2 opacity-60">Month</label>
+                        <input type="text" placeholder="Jan" value={formState.month} onChange={e => setFormState({...formState, month: e.target.value})} className={`w-full bg-transparent border-b-2 ${theme.border} pb-2 focus:outline-none font-serif`} />
+                      </div>
+                      <div>
+                        <label className="text-[10px] uppercase tracking-[0.2em] font-bold block mb-2 opacity-60">Year</label>
+                        <input type="text" value={formState.year} onChange={e => setFormState({...formState, year: e.target.value})} className={`w-full bg-transparent border-b-2 ${theme.border} pb-2 focus:outline-none font-serif`} />
+                      </div>
+                      <div className="col-span-2">
+                        <label className="text-[10px] uppercase tracking-[0.2em] font-bold block mb-2 opacity-60">Genre</label>
+                        <input type="text" value={formState.genre} onChange={e => setFormState({...formState, genre: e.target.value})} className={`w-full bg-transparent border-b-2 ${theme.border} pb-2 focus:outline-none font-serif`} />
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap gap-12 items-end">
+                      <div className="flex-grow min-w-[200px]">
+                        <label className="text-[10px] uppercase tracking-[0.2em] font-bold block mb-2 opacity-60">Cover URL</label>
+                        <input type="url" value={formState.coverUrl} onChange={e => setFormState({...formState, coverUrl: e.target.value})} className={`w-full bg-transparent border-b-2 ${theme.border} pb-2 focus:outline-none font-serif text-xs md:text-sm`} />
+                      </div>
+                      <div>
+                        <label className="text-[10px] uppercase tracking-[0.2em] font-bold block mb-2 opacity-60">Rating</label>
+                        <StarRating rating={formState.stars} setRating={(s) => setFormState({...formState, stars: s})} />
+                      </div>
+                    </div>
+                    <div className="flex flex-col md:flex-row gap-4 mt-4">
+                        <button type="submit" className={`flex-grow py-5 text-[10px] md:text-xs tracking-[0.5em] font-bold uppercase transition-all ${theme.accent} hover:scale-[0.99] active:scale-95`}>
+                        {editingBookId ? 'UPDATE EDITION' : 'ADD TO COLLECTION'}
+                        </button>
+                        {editingBookId && (
+                            <button type="button" onClick={() => handleDelete(editingBookId)} className="py-5 px-6 border-2 border-red-500 text-red-500 text-[10px] font-bold uppercase hover:bg-red-500 hover:text-white transition-all">DELETE</button>
+                        )}
+                    </div>
+                  </form>
+                </div>
+              ) : (
+                <div className="animate-in">
+                  {currentSection === 'library' && (
+                    <div className="max-w-6xl mx-auto py-12 px-2">
+                      {books.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center py-24 md:py-32">
+                          <div className="w-48 h-48 md:w-64 md:h-64 mb-8 animate-float">
+                            <LucideIcon name="bookOpen" className="w-full h-full text-current" />
+                          </div>
+                          <p className="font-serif italic text-2xl md:text-4xl opacity-30 text-center px-4">The shelf is waiting for your story.</p>
+                          <button onClick={() => { setIsAddingOrEditing(true); resetForm(); }} className="mt-8 text-[10px] tracking-widest font-bold uppercase opacity-50 hover:opacity-100 underline underline-offset-8">Curate your first edition</button>
+                        </div>
+                      ) : (
+                        <>
+                          <div className="flex flex-wrap justify-center items-end gap-2 px-4">
+                            {[...books].sort((a,b) => (b.createdAt || 0) - (a.createdAt || 0)).map((book) => (
+                              <div key={book.id} onClick={() => handleEdit(book)} className="relative group cursor-pointer transition-all duration-300 hover:-translate-y-8 hover:z-10">
+                                <div className={`shadow-xl border-r-2 border-black/10 overflow-hidden ${theme.border} border-t border-l`}>
+                                  <img src={book.coverUrl} className="w-14 sm:w-20 md:w-32 h-40 sm:h-56 md:h-80 object-cover" />
+                                </div>
+                                <div className="absolute inset-0 bg-black/80 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-4 pointer-events-none">
+                                  <p className="text-[8px] md:text-[10px] text-white font-bold uppercase tracking-tight line-clamp-2">{book.title}</p>
+                                  <p className="text-[7px] md:text-[8px] text-white/70 italic font-serif mt-1">{book.author}</p>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                          <div className={`w-full h-6 mt-[-4px] border-t-4 border-x-4 ${theme.border} opacity-20 bg-black/10`}></div>
+                        </>
+                      )}
+                    </div>
+                  )}
+
+                  {currentSection === 'list' && (
+                    <div className="max-w-5xl mx-auto px-2">
+                      <div className="overflow-x-auto no-scrollbar mb-4 border-b-2 border-black/10">
+                        <table className="w-full text-left border-collapse min-w-[600px]">
+                          <thead>
+                            <tr className={`text-[9px] md:text-[10px] uppercase tracking-[0.3em] font-bold border-b-2 ${theme.border}`}>
+                              {[
+                                { key: 'title', label: 'Title' },
+                                { key: 'author', label: 'Author' },
+                                { key: 'year', label: 'Year' },
+                                { key: 'genre', label: 'Genre' },
+                                { key: 'stars', label: 'Rating' }
+                              ].map(col => (
+                                <th key={col.key} className="pb-4 cursor-pointer hover:opacity-60 transition-opacity" onClick={() => handleSort(col.key)}>
+                                  <div className="flex items-center gap-1">
+                                    {col.label}
+                                    <LucideIcon name="sortIcon" className={`opacity-40 ${sortConfig.key === col.key ? 'opacity-100' : ''}`} />
+                                  </div>
+                                </th>
+                              ))}
+                              <th className="pb-4 text-center">Edit</th>
+                            </tr>
+                          </thead>
+                          <tbody className="font-serif text-sm">
+                            {sortedBooks.map(book => (
+                              <tr key={book.id} className={`group border-b ${theme.border} hover:bg-black/5 transition-colors`}>
+                                <td className="py-4 font-bold uppercase tracking-tight pr-4">{book.title}</td>
+                                <td className="py-4 italic opacity-70 pr-4">{book.author}</td>
+                                <td className="py-4 pr-4">{book.year}</td>
+                                <td className="py-4 opacity-60 text-[10px] md:text-xs pr-4">{book.genre}</td>
+                                <td className="py-4 pr-4"><StarRating rating={book.stars} interactive={false} /></td>
+                                <td className="py-4 text-center">
+                                  <button onClick={() => handleEdit(book)} className="p-2 opacity-30 group-hover:opacity-100 hover:scale-125 transition-all inline-block">
+                                    <LucideIcon name="edit" />
+                                  </button>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                      <div className="flex justify-end gap-3 pb-8 pt-4 pr-2">
+                        <button onClick={handleDownload} title="Download Collection" className={`p-3 border-2 ${theme.border} rounded-full bg-transparent hover:invert transition-all flex items-center justify-center`}><LucideIcon name="download" /></button>
+                        <label title="Upload Collection" className={`p-3 border-2 ${theme.border} rounded-full bg-transparent hover:invert transition-all flex items-center justify-center cursor-pointer`}>
+                          <LucideIcon name="upload" />
+                          <input type="file" className="hidden" accept=".json" onChange={handleUpload} />
+                        </label>
+                      </div>
+                    </div>
+                  )}
+
+                  {currentSection === 'cluster' && (
+                    <div className="max-w-6xl mx-auto px-4">
+                      <div className="flex flex-col items-center gap-6 mb-12">
+                        <div className="flex items-center gap-4">
+                          <button onClick={() => setClusterBy('author')} className={`w-4 h-4 rounded-full border-2 ${theme.border} ${clusterBy === 'author' ? 'bg-black' : ''}`} title="By Author"></button>
+                          <span className="text-[10px] uppercase tracking-widest font-bold">Group By</span>
+                          <button onClick={() => setClusterBy('genre')} className={`w-4 h-4 rounded-full border-2 ${theme.border} ${clusterBy === 'genre' ? 'bg-black' : ''}`} title="By Genre"></button>
+                        </div>
+                        <select value={clusterFilterYear} onChange={e => setClusterFilterYear(e.target.value)} className="bg-transparent border-b border-black text-[10px] uppercase tracking-widest font-bold focus:outline-none p-1">
+                          <option value="">All Years</option>
+                          {uniqueYears.map(y => <option key={y} value={y}>{y}</option>)}
+                        </select>
+                      </div>
+                      <div className="flex flex-wrap gap-12 md:gap-24 justify-center py-8">
+                        {(() => {
+                          const grouped = books.filter(b => !clusterFilterYear || b.year === clusterFilterYear).reduce((acc, b) => {
+                            const key = clusterBy === 'author' ? b.author : (b.genre || 'Uncategorized');
+                            if (!acc[key]) acc[key] = [];
+                            acc[key].push(b);
+                            return acc;
+                          }, {});
+                          
+                          const counts = Object.values(grouped).map(arr => arr.length);
+                          const maxCount = Math.max(...counts, 1);
+                          const minSize = 100;
+                          const maxSize = 250;
+
+                          return Object.entries(grouped).map(([group, groupBooks]) => {
+                            const relativeSize = minSize + ((groupBooks.length / maxCount) * (maxSize - minSize));
+                            
+                            return (
+                              <div key={group} className="flex flex-col items-center max-w-[200px]">
+                                <div 
+                                  style={{ width: `${relativeSize}px`, height: `${relativeSize}px` }}
+                                  className={`rounded-full border-2 ${theme.border} flex items-center justify-center p-4 text-center group hover:scale-105 transition-all shadow-lg bg-black/5 mb-4`}
+                                >
+                                  <span className="font-high-fashion font-bold leading-none uppercase tracking-tighter text-[10px] md:text-xs">
+                                    {group}<br/><span className="opacity-40 italic font-serif text-[8px]">Vol. {groupBooks.length}</span>
+                                  </span>
+                                </div>
+                                <div className="flex flex-col items-center gap-1 text-center">
+                                  {groupBooks.map(b => (
+                                    <span key={b.id} className="text-[7px] uppercase tracking-wider opacity-40 hover:opacity-100 transition-opacity">
+                                      {b.title}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                            );
+                          });
+                        })()}
+                      </div>
+                    </div>
+                  )}
+
+                  {currentSection === 'ranking' && (
+                    <div className="max-w-3xl mx-auto py-8 px-4">
+                      {uniqueYears.length === 0 ? (
+                        <p className="text-center font-serif italic opacity-30 py-24">No top editions to rank yet.</p>
+                      ) : (
+                        uniqueYears.map(year => {
+                          const rankedBooks = books
+                            .filter(b => b.year === year && (b.stars === 4 || b.stars === 5))
+                            .sort((a, b) => (a.rankingOrder || 0) - (b.rankingOrder || 0));
+                          
+                          if (rankedBooks.length === 0) return null;
+
+                          return (
+                            <div key={year} className="mb-16">
+                              <h3 className="text-3xl md:text-4xl font-high-fashion italic border-b-2 border-black/10 pb-4 mb-8">{year}</h3>
+                              <div className="flex flex-col gap-6 md:gap-8">
+                                {rankedBooks.map((book, idx) => (
+                                  <div key={book.id} className="flex flex-col md:flex-row md:items-center gap-4 md:gap-6 group relative">
+                                    <div className="flex items-center gap-4">
+                                      <span className="text-3xl md:text-4xl font-high-fashion opacity-20 w-8 md:w-12">{idx + 1}</span>
+                                      <div className="flex-grow">
+                                        <h4 className="font-bold uppercase text-base md:text-lg leading-tight line-clamp-1">{book.title}</h4>
+                                        <p className="font-serif italic text-xs md:text-sm opacity-60">by {book.author}</p>
+                                      </div>
+                                    </div>
+                                    <div className="flex items-center justify-between md:justify-end gap-6 border-t md:border-none pt-2 md:pt-0 border-black/5">
+                                       <StarRating rating={book.stars} interactive={false} />
+                                       <div className="flex items-center gap-4 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
+                                          <button onClick={() => moveRanking(book, 'up', year)} className="p-1 hover:scale-125"><LucideIcon name="chevronUp" /></button>
+                                          <button onClick={() => moveRanking(book, 'down', year)} className="p-1 hover:scale-125"><LucideIcon name="chevronDown" /></button>
+                                       </div>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+            </main>
+
+            <footer className="mt-24 border-t-2 border-black/10 py-12 text-center opacity-40 hover:opacity-100 transition-opacity">
+              <div className="flex flex-wrap items-center justify-center gap-4 md:gap-6 mb-8 px-4">
+                {['runway', 'vogue', 'studio', 'dry'].map(id => (
+                  <button key={id} onClick={() => setCurrentTheme(id)} className={`text-[8px] md:text-[10px] tracking-[0.3em] font-bold ${currentTheme === id ? 'underline underline-offset-4' : ''}`}>
+                    {id.toUpperCase()}
+                  </button>
+                ))}
+              </div>
+              <p className="text-[10px] tracking-[0.4em] font-bold uppercase">CHICSHELF<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CHICSHELF | Editorial Book Tracker</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@300;400;600&family=Bodoni+Moda:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    
+    <!-- React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    
+    <!-- Babel -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <!-- Firebase -->
+    <script type="module">
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+      import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+      import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+      
+      window.FirebaseSDK = { initializeApp, getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged, getFirestore, doc, setDoc, getDoc, collection, onSnapshot, updateDoc, deleteDoc };
+    </script>
+
+    <style>
+      body {
+        font-family: 'Montserrat', sans-serif;
+        -webkit-font-smoothing: antialiased;
+        overflow-x: hidden;
+      }
+      .font-serif { font-family: 'Playfair Display', serif; }
+      .font-high-fashion { font-family: 'Bodoni Moda', serif; }
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      
+      @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+      .animate-in { animation: fadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+      
+      @keyframes float {
+        0% { transform: translateY(0px); }
+        50% { transform: translateY(-10px); }
+        100% { transform: translateY(0px); }
+      }
+      .animate-float { animation: float 4s ease-in-out infinite; }
+
+      .star-rating { color: #eab308; }
+      .star-empty { color: #d1d5db; }
+      
+      @media (max-width: 640px) {
+        .mobile-header-text { font-size: 2.5rem; line-height: 1; }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+      const { useState, useEffect, useCallback, useMemo } = React;
+      const { initializeApp, getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged, getFirestore, doc, setDoc, getDoc, collection, onSnapshot, updateDoc, deleteDoc } = window.FirebaseSDK;
+
+      const THEME_CONFIG = {
+        runway: { bg: 'bg-[#d9e2d5]', text: 'text-[#2f3e2d]', accent: 'bg-[#5d6d53] text-white', border: 'border-[#2f3e2d]', cardBg: 'bg-[#e7eee4]' },
+        vogue: { bg: 'bg-[#ffffff]', text: 'text-[#000000]', accent: 'bg-[#ff0000] text-white', border: 'border-[#000000]', cardBg: 'bg-[#ffffff]' },
+        studio: { bg: 'bg-[#fff0f5]', text: 'text-[#4a0404]', accent: 'bg-[#800020] text-white', border: 'border-[#800020]', cardBg: 'bg-[#fffcfd]' },
+        dry: { bg: 'bg-[#f4e1d2]', text: 'text-[#7d4f50]', accent: 'bg-[#ac8e82] text-white', border: 'border-[#7d4f50]', cardBg: 'bg-[#faf3ed]' },
+      };
+
+      const PLACEHOLDER_COVERS = [
+        'https://images.unsplash.com/photo-1544947950-fa07a98d237f?auto=format&fit=crop&q=80&w=800',
+        'https://images.unsplash.com/photo-1589998059171-988d887df646?auto=format&fit=crop&q=80&w=800',
+        'https://images.unsplash.com/photo-1512820790803-83ca734da794?auto=format&fit=crop&q=80&w=800',
+      ];
+
+      const LucideIcon = ({ name, className = "" }) => {
+        const icons = {
+          download: <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>,
+          upload: <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>,
+          star: <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>,
+          chevronUp: <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="18 15 12 9 6 15"/></svg>,
+          chevronDown: <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"/></svg>,
+          edit: <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>,
+          bookOpen: <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" className="w-full h-full opacity-10"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>,
+          sortIcon: <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="7 15 12 20 17 15"/><polyline points="7 9 12 4 17 9"/></svg>
+        };
+        return <span className={className}>{icons[name] || null}</span>;
+      };
+
+      const StarRating = ({ rating, setRating, interactive = true }) => {
+        return (
+          <div className="flex gap-1">
+            {[1, 2, 3, 4, 5].map((s) => (
+              <button
+                key={s}
+                type="button"
+                onClick={() => interactive && setRating(s)}
+                className={`transition-all duration-200 ${s <= rating ? 'text-yellow-500 scale-110' : 'text-gray-300 opacity-40'} ${interactive ? 'hover:scale-125' : 'cursor-default'}`}
+              >
+                <LucideIcon name="star" />
+              </button>
+            ))}
+          </div>
+        );
+      };
+
+      const App = () => {
+        const [user, setUser] = useState(null);
+        const [books, setBooks] = useState([]);
+        const [currentTheme, setCurrentTheme] = useState('dry');
+        const [currentSection, setCurrentSection] = useState('library');
+        const [isAddingOrEditing, setIsAddingOrEditing] = useState(false);
+        const [editingBookId, setEditingBookId] = useState(null);
+        const [clusterBy, setClusterBy] = useState('author');
+        const [clusterFilterYear, setClusterFilterYear] = useState('');
+        const [sortConfig, setSortConfig] = useState({ key: 'createdAt', direction: 'desc' });
+
+        const [formState, setFormState] = useState({
+          title: '', author: '', month: '', year: new Date().getFullYear().toString(), genre: '', stars: 1, coverUrl: ''
+        });
+
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'chicshelf-standalone';
+        const firebaseConfigStr = typeof __firebase_config !== 'undefined' ? __firebase_config : null;
+        
+        let db = null;
+        let auth = null;
+
+        if (firebaseConfigStr) {
+          try {
+            const config = JSON.parse(firebaseConfigStr);
+            const app = initializeApp(config);
+            auth = getAuth(app);
+            db = getFirestore(app);
+          } catch(e) {
+            console.warn("Firebase failed to init.");
+          }
+        }
+
+        useEffect(() => {
+          if (!auth) {
+              setUser({ uid: 'local-user' });
+              return;
+          }
+          const initAuth = async () => {
+            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+              await signInWithCustomToken(auth, __initial_auth_token);
+            } else {
+              await signInAnonymously(auth);
+            }
+          };
+          initAuth();
+          const unsubscribe = onAuthStateChanged(auth, setUser);
+          return () => unsubscribe();
+        }, []);
+
+        useEffect(() => {
+          if (!user || !db) return;
+          const q = collection(db, 'artifacts', appId, 'users', user.uid, 'books');
+          const unsubscribe = onSnapshot(q, (snapshot) => {
+            const fetched = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            setBooks(fetched);
+          }, (err) => console.error("Firestore error:", err));
+          return () => unsubscribe();
+        }, [user]);
+
+        const theme = THEME_CONFIG[currentTheme] || THEME_CONFIG.dry;
+
+        const handleSubmit = async (e) => {
+          e.preventDefault();
+          if (!user || !formState.title || !formState.author) return;
+
+          const bookData = {
+            ...formState,
+            coverUrl: formState.coverUrl || PLACEHOLDER_COVERS[Math.floor(Math.random() * PLACEHOLDER_COVERS.length)],
+            updatedAt: Date.now(),
+            rankingOrder: formState.rankingOrder || Date.now()
+          };
+
+          if (db) {
+            if (editingBookId) {
+                await updateDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'books', editingBookId), bookData);
+            } else {
+                const newDoc = doc(collection(db, 'artifacts', appId, 'users', user.uid, 'books'));
+                await setDoc(newDoc, { ...bookData, createdAt: Date.now() });
+            }
+          } else {
+            if (editingBookId) {
+                setBooks(prev => prev.map(b => b.id === editingBookId ? {...b, ...bookData} : b));
+            } else {
+                setBooks(prev => [{...bookData, id: Date.now().toString() + Math.random(), createdAt: Date.now()}, ...prev]);
+            }
+          }
+
+          resetForm();
+          setIsAddingOrEditing(false);
+        };
+
+        const resetForm = () => {
+          setFormState({ title: '', author: '', month: '', year: new Date().getFullYear().toString(), genre: '', stars: 1, coverUrl: '' });
+          setEditingBookId(null);
+        };
+
+        const handleEdit = (book) => {
+          setFormState(book);
+          setEditingBookId(book.id);
+          setIsAddingOrEditing(true);
+        };
+
+        const handleDelete = async (id) => {
+          if (!user || !confirm("Delete this edition?")) return;
+          if (db) {
+            await deleteDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'books', id));
+          } else {
+            setBooks(prev => prev.filter(b => b.id !== id));
+            setIsAddingOrEditing(false);
+          }
+        };
+
+        const handleDownload = () => {
+          const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(books));
+          const downloadAnchorNode = document.createElement('a');
+          downloadAnchorNode.setAttribute("href", dataStr);
+          downloadAnchorNode.setAttribute("download", "chicshelf_backup.json");
+          document.body.appendChild(downloadAnchorNode);
+          downloadAnchorNode.click();
+          downloadAnchorNode.remove();
+        };
+
+        const handleUpload = (e) => {
+          const file = e.target.files[0];
+          if (!file) return;
+          const reader = new FileReader();
+          reader.onload = async (event) => {
+            try {
+              const imported = JSON.parse(event.target.result);
+              if (Array.isArray(imported)) {
+                const existingKeys = new Set(books.map(b => `${b.title.toLowerCase().trim()}|${b.author.toLowerCase().trim()}`));
+                const newBooks = imported.filter(b => {
+                  const key = `${b.title.toLowerCase().trim()}|${b.author.toLowerCase().trim()}`;
+                  return !existingKeys.has(key);
+                });
+
+                if (newBooks.length === 0) return;
+
+                if (db) {
+                    for (const b of newBooks) {
+                        const { id, ...cleanData } = b;
+                        const newDoc = doc(collection(db, 'artifacts', appId, 'users', user.uid, 'books'));
+                        await setDoc(newDoc, { ...cleanData, createdAt: Date.now() });
+                    }
+                } else {
+                    const uniqueNewBooks = newBooks.map(b => ({
+                      ...b, 
+                      id: Date.now().toString() + Math.random(), 
+                      createdAt: Date.now()
+                    }));
+                    setBooks(prev => [...uniqueNewBooks, ...prev]);
+                }
+              }
+            } catch (err) { console.error("Import failed", err); }
+          };
+          reader.readAsText(file);
+          e.target.value = '';
+        };
+
+        const handleSort = (key) => {
+          let direction = 'asc';
+          if (sortConfig.key === key && sortConfig.direction === 'asc') {
+            direction = 'desc';
+          }
+          setSortConfig({ key, direction });
+        };
+
+        const sortedBooks = useMemo(() => {
+          const sortable = [...books];
+          sortable.sort((a, b) => {
+            let aVal = a[sortConfig.key];
+            let bVal = b[sortConfig.key];
+
+            // Handle numeric strings like years
+            if (sortConfig.key === 'year' || sortConfig.key === 'stars') {
+              aVal = Number(aVal);
+              bVal = Number(bVal);
+            } else if (typeof aVal === 'string') {
+              aVal = aVal.toLowerCase();
+              bVal = bVal.toLowerCase();
+            }
+
+            if (aVal < bVal) return sortConfig.direction === 'asc' ? -1 : 1;
+            if (aVal > bVal) return sortConfig.direction === 'asc' ? 1 : -1;
+            return 0;
+          });
+          return sortable;
+        }, [books, sortConfig]);
+
+        const moveRanking = async (book, direction, yearGroup) => {
+          const group = books
+            .filter(b => b.year === yearGroup && (b.stars === 4 || b.stars === 5))
+            .sort((a, b) => (a.rankingOrder || 0) - (b.rankingOrder || 0));
+          
+          const idx = group.findIndex(b => b.id === book.id);
+          let targetId = null;
+          let targetOrder = null;
+          
+          if (direction === 'up' && idx > 0) {
+            targetId = group[idx - 1].id;
+            targetOrder = group[idx - 1].rankingOrder;
+          } else if (direction === 'down' && idx < group.length - 1) {
+            targetId = group[idx + 1].id;
+            targetOrder = group[idx + 1].rankingOrder;
+          }
+
+          if (targetId !== null) {
+            if (db) {
+                const currentOrder = book.rankingOrder;
+                await updateDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'books', book.id), { rankingOrder: targetOrder });
+                await updateDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'books', targetId), { rankingOrder: currentOrder });
+            } else {
+                setBooks(prev => prev.map(b => {
+                    if (b.id === book.id) return {...b, rankingOrder: targetOrder};
+                    if (b.id === targetId) return {...b, rankingOrder: book.rankingOrder};
+                    return b;
+                }));
+            }
+          }
+        };
+
+        const uniqueYears = useMemo(() => Array.from(new Set(books.map(b => b.year))).sort((a, b) => b - a), [books]);
+
+        return (
+          <div className={`min-h-screen transition-colors duration-500 ${theme.bg} ${theme.text} px-4 pb-12 pt-6 md:px-12 lg:px-24`}>
+            <header className={`mb-8 sticky top-0 ${theme.bg} z-50 pt-2`}>
+              <div className="flex justify-between items-center mb-6">
+                <h1 
+                  className="text-3xl sm:text-4xl md:text-8xl font-high-fashion font-bold tracking-tighter leading-none cursor-pointer mobile-header-text" 
+                  onClick={() => { setCurrentSection('library'); setIsAddingOrEditing(false); }}
+                >
+                  CHICSHELF
+                </h1>
+                <button onClick={() => { setIsAddingOrEditing(!isAddingOrEditing); if(!isAddingOrEditing) resetForm(); }} className={`px-4 py-2 border-2 ${theme.border} text-[9px] md:text-[10px] font-bold tracking-[0.2em] md:tracking-[0.3em] uppercase transition-all hover:invert ml-4 whitespace-nowrap`}>
+                  {isAddingOrEditing ? 'CLOSE' : 'NEW EDITION'}
+                </button>
+              </div>
+              <nav className={`border-y-2 ${theme.border} py-3 flex justify-center gap-4 md:gap-16 overflow-x-auto no-scrollbar`}>
+                {['library', 'list', 'cluster', 'ranking'].map((s) => (
+                  <button key={s} onClick={() => { setCurrentSection(s); setIsAddingOrEditing(false); }} className={`text-[9px] md:text-sm font-high-fashion tracking-[0.2em] uppercase transition-all whitespace-nowrap ${currentSection === s && !isAddingOrEditing ? 'underline underline-offset-8 italic scale-110' : 'opacity-40 hover:opacity-100'}`}>
+                    {s}
+                  </button>
+                ))}
+              </nav>
+            </header>
+
+            <main className="min-h-[60vh] relative">
+              {isAddingOrEditing ? (
+                <div className="max-w-2xl mx-auto py-8 animate-in">
+                  <h2 className="text-xl md:text-2xl font-high-fashion uppercase mb-12 text-center underline italic">{editingBookId ? 'Edit Edition' : 'New Edition'}</h2>
+                  <form onSubmit={handleSubmit} className="flex flex-col gap-8 px-2 md:px-0">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                      <div className="group">
+                        <label className="text-[10px] uppercase tracking-[0.2em] font-bold block mb-2 opacity-60">Title</label>
+                        <input type="text" required value={formState.title} onChange={e => setFormState({...formState, title: e.target.value})} className={`w-full bg-transparent border-b-2 ${theme.border} pb-2 focus:outline-none font-serif text-lg`} />
+                      </div>
+                      <div className="group">
+                        <label className="text-[10px] uppercase tracking-[0.2em] font-bold block mb-2 opacity-60">Author</label>
+                        <input type="text" required value={formState.author} onChange={e => setFormState({...formState, author: e.target.value})} className={`w-full bg-transparent border-b-2 ${theme.border} pb-2 focus:outline-none font-serif text-lg`} />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      <div>
+                        <label className="text-[10px] uppercase tracking-[0.2em] font-bold block mb-2 opacity-60">Month</label>
+                        <input type="text" placeholder="Jan" value={formState.month} onChange={e => setFormState({...formState, month: e.target.value})} className={`w-full bg-transparent border-b-2 ${theme.border} pb-2 focus:outline-none font-serif`} />
+                      </div>
+                      <div>
+                        <label className="text-[10px] uppercase tracking-[0.2em] font-bold block mb-2 opacity-60">Year</label>
+                        <input type="text" value={formState.year} onChange={e => setFormState({...formState, year: e.target.value})} className={`w-full bg-transparent border-b-2 ${theme.border} pb-2 focus:outline-none font-serif`} />
+                      </div>
+                      <div className="col-span-2">
+                        <label className="text-[10px] uppercase tracking-[0.2em] font-bold block mb-2 opacity-60">Genre</label>
+                        <input type="text" value={formState.genre} onChange={e => setFormState({...formState, genre: e.target.value})} className={`w-full bg-transparent border-b-2 ${theme.border} pb-2 focus:outline-none font-serif`} />
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap gap-12 items-end">
+                      <div className="flex-grow min-w-[200px]">
+                        <label className="text-[10px] uppercase tracking-[0.2em] font-bold block mb-2 opacity-60">Cover URL</label>
+                        <input type="url" value={formState.coverUrl} onChange={e => setFormState({...formState, coverUrl: e.target.value})} className={`w-full bg-transparent border-b-2 ${theme.border} pb-2 focus:outline-none font-serif text-xs md:text-sm`} />
+                      </div>
+                      <div>
+                        <label className="text-[10px] uppercase tracking-[0.2em] font-bold block mb-2 opacity-60">Rating</label>
+                        <StarRating rating={formState.stars} setRating={(s) => setFormState({...formState, stars: s})} />
+                      </div>
+                    </div>
+                    <div className="flex flex-col md:flex-row gap-4 mt-4">
+                        <button type="submit" className={`flex-grow py-5 text-[10px] md:text-xs tracking-[0.5em] font-bold uppercase transition-all ${theme.accent} hover:scale-[0.99] active:scale-95`}>
+                        {editingBookId ? 'UPDATE EDITION' : 'ADD TO COLLECTION'}
+                        </button>
+                        {editingBookId && (
+                            <button type="button" onClick={() => handleDelete(editingBookId)} className="py-5 px-6 border-2 border-red-500 text-red-500 text-[10px] font-bold uppercase hover:bg-red-500 hover:text-white transition-all">DELETE</button>
+                        )}
+                    </div>
+                  </form>
+                </div>
+              ) : (
+                <div className="animate-in">
+                  {currentSection === 'library' && (
+                    <div className="max-w-6xl mx-auto py-12 px-2">
+                      {books.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center py-24 md:py-32">
+                          <div className="w-48 h-48 md:w-64 md:h-64 mb-8 animate-float">
+                            <LucideIcon name="bookOpen" className="w-full h-full text-current" />
+                          </div>
+                          <p className="font-serif italic text-2xl md:text-4xl opacity-30 text-center px-4">The shelf is waiting for your story.</p>
+                          <button onClick={() => { setIsAddingOrEditing(true); resetForm(); }} className="mt-8 text-[10px] tracking-widest font-bold uppercase opacity-50 hover:opacity-100 underline underline-offset-8">Curate your first edition</button>
+                        </div>
+                      ) : (
+                        <>
+                          <div className="flex flex-wrap justify-center items-end gap-2 px-4">
+                            {[...books].sort((a,b) => (b.createdAt || 0) - (a.createdAt || 0)).map((book) => (
+                              <div key={book.id} onClick={() => handleEdit(book)} className="relative group cursor-pointer transition-all duration-300 hover:-translate-y-8 hover:z-10">
+                                <div className={`shadow-xl border-r-2 border-black/10 overflow-hidden ${theme.border} border-t border-l`}>
+                                  <img src={book.coverUrl} className="w-14 sm:w-20 md:w-32 h-40 sm:h-56 md:h-80 object-cover" />
+                                </div>
+                                <div className="absolute inset-0 bg-black/80 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-4 pointer-events-none">
+                                  <p className="text-[8px] md:text-[10px] text-white font-bold uppercase tracking-tight line-clamp-2">{book.title}</p>
+                                  <p className="text-[7px] md:text-[8px] text-white/70 italic font-serif mt-1">{book.author}</p>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                          <div className={`w-full h-6 mt-[-4px] border-t-4 border-x-4 ${theme.border} opacity-20 bg-black/10`}></div>
+                        </>
+                      )}
+                    </div>
+                  )}
+
+                  {currentSection === 'list' && (
+                    <div className="max-w-5xl mx-auto px-2">
+                      <div className="overflow-x-auto no-scrollbar mb-4 border-b-2 border-black/10">
+                        <table className="w-full text-left border-collapse min-w-[600px]">
+                          <thead>
+                            <tr className={`text-[9px] md:text-[10px] uppercase tracking-[0.3em] font-bold border-b-2 ${theme.border}`}>
+                              {[
+                                { key: 'title', label: 'Title' },
+                                { key: 'author', label: 'Author' },
+                                { key: 'year', label: 'Year' },
+                                { key: 'genre', label: 'Genre' },
+                                { key: 'stars', label: 'Rating' }
+                              ].map(col => (
+                                <th key={col.key} className="pb-4 cursor-pointer hover:opacity-60 transition-opacity" onClick={() => handleSort(col.key)}>
+                                  <div className="flex items-center gap-1">
+                                    {col.label}
+                                    <LucideIcon name="sortIcon" className={`opacity-40 ${sortConfig.key === col.key ? 'opacity-100' : ''}`} />
+                                  </div>
+                                </th>
+                              ))}
+                              <th className="pb-4 text-center">Edit</th>
+                            </tr>
+                          </thead>
+                          <tbody className="font-serif text-sm">
+                            {sortedBooks.map(book => (
+                              <tr key={book.id} className={`group border-b ${theme.border} hover:bg-black/5 transition-colors`}>
+                                <td className="py-4 font-bold uppercase tracking-tight pr-4">{book.title}</td>
+                                <td className="py-4 italic opacity-70 pr-4">{book.author}</td>
+                                <td className="py-4 pr-4">{book.year}</td>
+                                <td className="py-4 opacity-60 text-[10px] md:text-xs pr-4">{book.genre}</td>
+                                <td className="py-4 pr-4"><StarRating rating={book.stars} interactive={false} /></td>
+                                <td className="py-4 text-center">
+                                  <button onClick={() => handleEdit(book)} className="p-2 opacity-30 group-hover:opacity-100 hover:scale-125 transition-all inline-block">
+                                    <LucideIcon name="edit" />
+                                  </button>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                      <div className="flex justify-end gap-3 pb-8 pt-4 pr-2">
+                        <button onClick={handleDownload} title="Download Collection" className={`p-3 border-2 ${theme.border} rounded-full bg-transparent hover:invert transition-all flex items-center justify-center`}><LucideIcon name="download" /></button>
+                        <label title="Upload Collection" className={`p-3 border-2 ${theme.border} rounded-full bg-transparent hover:invert transition-all flex items-center justify-center cursor-pointer`}>
+                          <LucideIcon name="upload" />
+                          <input type="file" className="hidden" accept=".json" onChange={handleUpload} />
+                        </label>
+                      </div>
+                    </div>
+                  )}
+
+                  {currentSection === 'cluster' && (
+                    <div className="max-w-6xl mx-auto px-4">
+                      <div className="flex flex-col items-center gap-6 mb-12">
+                        <div className="flex items-center gap-4">
+                          <button onClick={() => setClusterBy('author')} className={`w-4 h-4 rounded-full border-2 ${theme.border} ${clusterBy === 'author' ? 'bg-black' : ''}`} title="By Author"></button>
+                          <span className="text-[10px] uppercase tracking-widest font-bold">Group By</span>
+                          <button onClick={() => setClusterBy('genre')} className={`w-4 h-4 rounded-full border-2 ${theme.border} ${clusterBy === 'genre' ? 'bg-black' : ''}`} title="By Genre"></button>
+                        </div>
+                        <select value={clusterFilterYear} onChange={e => setClusterFilterYear(e.target.value)} className="bg-transparent border-b border-black text-[10px] uppercase tracking-widest font-bold focus:outline-none p-1">
+                          <option value="">All Years</option>
+                          {uniqueYears.map(y => <option key={y} value={y}>{y}</option>)}
+                        </select>
+                      </div>
+                      <div className="flex flex-wrap gap-12 md:gap-24 justify-center py-8">
+                        {(() => {
+                          const grouped = books.filter(b => !clusterFilterYear || b.year === clusterFilterYear).reduce((acc, b) => {
+                            const key = clusterBy === 'author' ? b.author : (b.genre || 'Uncategorized');
+                            if (!acc[key]) acc[key] = [];
+                            acc[key].push(b);
+                            return acc;
+                          }, {});
+                          
+                          const counts = Object.values(grouped).map(arr => arr.length);
+                          const maxCount = Math.max(...counts, 1);
+                          const minSize = 100;
+                          const maxSize = 250;
+
+                          return Object.entries(grouped).map(([group, groupBooks]) => {
+                            const relativeSize = minSize + ((groupBooks.length / maxCount) * (maxSize - minSize));
+                            
+                            return (
+                              <div key={group} className="flex flex-col items-center max-w-[200px]">
+                                <div 
+                                  style={{ width: `${relativeSize}px`, height: `${relativeSize}px` }}
+                                  className={`rounded-full border-2 ${theme.border} flex items-center justify-center p-4 text-center group hover:scale-105 transition-all shadow-lg bg-black/5 mb-4`}
+                                >
+                                  <span className="font-high-fashion font-bold leading-none uppercase tracking-tighter text-[10px] md:text-xs">
+                                    {group}<br/><span className="opacity-40 italic font-serif text-[8px]">Vol. {groupBooks.length}</span>
+                                  </span>
+                                </div>
+                                <div className="flex flex-col items-center gap-1 text-center">
+                                  {groupBooks.map(b => (
+                                    <span key={b.id} className="text-[7px] uppercase tracking-wider opacity-40 hover:opacity-100 transition-opacity">
+                                      {b.title}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                            );
+                          });
+                        })()}
+                      </div>
+                    </div>
+                  )}
+
+                  {currentSection === 'ranking' && (
+                    <div className="max-w-3xl mx-auto py-8 px-4">
+                      {uniqueYears.length === 0 ? (
+                        <p className="text-center font-serif italic opacity-30 py-24">No top editions to rank yet.</p>
+                      ) : (
+                        uniqueYears.map(year => {
+                          const rankedBooks = books
+                            .filter(b => b.year === year && (b.stars === 4 || b.stars === 5))
+                            .sort((a, b) => (a.rankingOrder || 0) - (b.rankingOrder || 0));
+                          
+                          if (rankedBooks.length === 0) return null;
+
+                          return (
+                            <div key={year} className="mb-16">
+                              <h3 className="text-3xl md:text-4xl font-high-fashion italic border-b-2 border-black/10 pb-4 mb-8">{year}</h3>
+                              <div className="flex flex-col gap-6 md:gap-8">
+                                {rankedBooks.map((book, idx) => (
+                                  <div key={book.id} className="flex flex-col md:flex-row md:items-center gap-4 md:gap-6 group relative">
+                                    <div className="flex items-center gap-4">
+                                      <span className="text-3xl md:text-4xl font-high-fashion opacity-20 w-8 md:w-12">{idx + 1}</span>
+                                      <div className="flex-grow">
+                                        <h4 className="font-bold uppercase text-base md:text-lg leading-tight line-clamp-1">{book.title}</h4>
+                                        <p className="font-serif italic text-xs md:text-sm opacity-60">by {book.author}</p>
+                                      </div>
+                                    </div>
+                                    <div className="flex items-center justify-between md:justify-end gap-6 border-t md:border-none pt-2 md:pt-0 border-black/5">
+                                       <StarRating rating={book.stars} interactive={false} />
+                                       <div className="flex items-center gap-4 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
+                                          <button onClick={() => moveRanking(book, 'up', year)} className="p-1 hover:scale-125"><LucideIcon name="chevronUp" /></button>
+                                          <button onClick={() => moveRanking(book, 'down', year)} className="p-1 hover:scale-125"><LucideIcon name="chevronDown" /></button>
+                                       </div>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+            </main>
+
+            <footer className="mt-24 border-t-2 border-black/10 py-12 text-center opacity-40 hover:opacity-100 transition-opacity">
+              <div className="flex flex-wrap items-center justify-center gap-4 md:gap-6 mb-8 px-4">
+                {['runway', 'vogue', 'studio', 'dry'].map(id => (
+                  <button key={id} onClick={() => setCurrentTheme(id)} className={`text-[8px] md:text-[10px] tracking-[0.3em] font-bold ${currentTheme === id ? 'underline underline-offset-4' : ''}`}>
+                    {id.toUpperCase()}
+                  </button>
+                ))}
+              </div>
+              <p className="text-[10px] tracking-[0.4em] font-bold uppercase">CHICSHELF © 2026</p>
+            </footer>
+          </div>
+        );
+      };
+
+      const root = ReactDOM.createRoot(document.getElementById('root'));
+      root.render(<App />);
+    </script>
+  </body>
+</html><!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CHICSHELF | Editorial Book Tracker</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@300;400;600&family=Bodoni+Moda:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    
+    <!-- React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    
+    <!-- Babel -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <!-- Firebase -->
+    <script type="module">
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+      import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+      import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+      
+      window.FirebaseSDK = { initializeApp, getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged, getFirestore, doc, setDoc, getDoc, collection, onSnapshot, updateDoc, deleteDoc };
+    </script>
+
+    <style>
+      body {
+        font-family: 'Montserrat', sans-serif;
+        -webkit-font-smoothing: antialiased;
+        overflow-x: hidden;
+      }
+      .font-serif { font-family: 'Playfair Display', serif; }
+      .font-high-fashion { font-family: 'Bodoni Moda', serif; }
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      
+      @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+      .animate-in { animation: fadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+      
+      @keyframes float {
+        0% { transform: translateY(0px); }
+        50% { transform: translateY(-10px); }
+        100% { transform: translateY(0px); }
+      }
+      .animate-float { animation: float 4s ease-in-out infinite; }
+
+      .star-rating { color: #eab308; }
+      .star-empty { color: #d1d5db; }
+      
+      @media (max-width: 640px) {
+        .mobile-header-text { font-size: 2.5rem; line-height: 1; }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+      const { useState, useEffect, useCallback, useMemo } = React;
+      const { initializeApp, getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged, getFirestore, doc, setDoc, getDoc, collection, onSnapshot, updateDoc, deleteDoc } = window.FirebaseSDK;
+
+      const THEME_CONFIG = {
+        runway: { bg: 'bg-[#d9e2d5]', text: 'text-[#2f3e2d]', accent: 'bg-[#5d6d53] text-white', border: 'border-[#2f3e2d]', cardBg: 'bg-[#e7eee4]' },
+        vogue: { bg: 'bg-[#ffffff]', text: 'text-[#000000]', accent: 'bg-[#ff0000] text-white', border: 'border-[#000000]', cardBg: 'bg-[#ffffff]' },
+        studio: { bg: 'bg-[#fff0f5]', text: 'text-[#4a0404]', accent: 'bg-[#800020] text-white', border: 'border-[#800020]', cardBg: 'bg-[#fffcfd]' },
+        dry: { bg: 'bg-[#f4e1d2]', text: 'text-[#7d4f50]', accent: 'bg-[#ac8e82] text-white', border: 'border-[#7d4f50]', cardBg: 'bg-[#faf3ed]' },
+      };
+
+      const PLACEHOLDER_COVERS = [
+        'https://images.unsplash.com/photo-1544947950-fa07a98d237f?auto=format&fit=crop&q=80&w=800',
+        'https://images.unsplash.com/photo-1589998059171-988d887df646?auto=format&fit=crop&q=80&w=800',
+        'https://images.unsplash.com/photo-1512820790803-83ca734da794?auto=format&fit=crop&q=80&w=800',
+      ];
+
+      const LucideIcon = ({ name, className = "" }) => {
+        const icons = {
+          download: <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>,
+          upload: <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>,
+          star: <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>,
+          chevronUp: <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="18 15 12 9 6 15"/></svg>,
+          chevronDown: <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"/></svg>,
+          edit: <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>,
+          bookOpen: <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" className="w-full h-full opacity-10"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>,
+          sortIcon: <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="7 15 12 20 17 15"/><polyline points="7 9 12 4 17 9"/></svg>
+        };
+        return <span className={className}>{icons[name] || null}</span>;
+      };
+
+      const StarRating = ({ rating, setRating, interactive = true }) => {
+        return (
+          <div className="flex gap-1">
+            {[1, 2, 3, 4, 5].map((s) => (
+              <button
+                key={s}
+                type="button"
+                onClick={() => interactive && setRating(s)}
+                className={`transition-all duration-200 ${s <= rating ? 'text-yellow-500 scale-110' : 'text-gray-300 opacity-40'} ${interactive ? 'hover:scale-125' : 'cursor-default'}`}
+              >
+                <LucideIcon name="star" />
+              </button>
+            ))}
+          </div>
+        );
+      };
+
+      const App = () => {
+        const [user, setUser] = useState(null);
+        const [books, setBooks] = useState([]);
+        const [currentTheme, setCurrentTheme] = useState('dry');
+        const [currentSection, setCurrentSection] = useState('library');
+        const [isAddingOrEditing, setIsAddingOrEditing] = useState(false);
+        const [editingBookId, setEditingBookId] = useState(null);
+        const [clusterBy, setClusterBy] = useState('author');
+        const [clusterFilterYear, setClusterFilterYear] = useState('');
+        const [sortConfig, setSortConfig] = useState({ key: 'createdAt', direction: 'desc' });
+
+        const [formState, setFormState] = useState({
+          title: '', author: '', month: '', year: new Date().getFullYear().toString(), genre: '', stars: 1, coverUrl: ''
+        });
+
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'chicshelf-standalone';
+        const firebaseConfigStr = typeof __firebase_config !== 'undefined' ? __firebase_config : null;
+        
+        let db = null;
+        let auth = null;
+
+        if (firebaseConfigStr) {
+          try {
+            const config = JSON.parse(firebaseConfigStr);
+            const app = initializeApp(config);
+            auth = getAuth(app);
+            db = getFirestore(app);
+          } catch(e) {
+            console.warn("Firebase failed to init.");
+          }
+        }
+
+        useEffect(() => {
+          if (!auth) {
+              setUser({ uid: 'local-user' });
+              return;
+          }
+          const initAuth = async () => {
+            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+              await signInWithCustomToken(auth, __initial_auth_token);
+            } else {
+              await signInAnonymously(auth);
+            }
+          };
+          initAuth();
+          const unsubscribe = onAuthStateChanged(auth, setUser);
+          return () => unsubscribe();
+        }, []);
+
+        useEffect(() => {
+          if (!user || !db) return;
+          const q = collection(db, 'artifacts', appId, 'users', user.uid, 'books');
+          const unsubscribe = onSnapshot(q, (snapshot) => {
+            const fetched = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            setBooks(fetched);
+          }, (err) => console.error("Firestore error:", err));
+          return () => unsubscribe();
+        }, [user]);
+
+        const theme = THEME_CONFIG[currentTheme] || THEME_CONFIG.dry;
+
+        const handleSubmit = async (e) => {
+          e.preventDefault();
+          if (!user || !formState.title || !formState.author) return;
+
+          const bookData = {
+            ...formState,
+            coverUrl: formState.coverUrl || PLACEHOLDER_COVERS[Math.floor(Math.random() * PLACEHOLDER_COVERS.length)],
+            updatedAt: Date.now(),
+            rankingOrder: formState.rankingOrder || Date.now()
+          };
+
+          if (db) {
+            if (editingBookId) {
+                await updateDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'books', editingBookId), bookData);
+            } else {
+                const newDoc = doc(collection(db, 'artifacts', appId, 'users', user.uid, 'books'));
+                await setDoc(newDoc, { ...bookData, createdAt: Date.now() });
+            }
+          } else {
+            if (editingBookId) {
+                setBooks(prev => prev.map(b => b.id === editingBookId ? {...b, ...bookData} : b));
+            } else {
+                setBooks(prev => [{...bookData, id: Date.now().toString() + Math.random(), createdAt: Date.now()}, ...prev]);
+            }
+          }
+
+          resetForm();
+          setIsAddingOrEditing(false);
+        };
+
+        const resetForm = () => {
+          setFormState({ title: '', author: '', month: '', year: new Date().getFullYear().toString(), genre: '', stars: 1, coverUrl: '' });
+          setEditingBookId(null);
+        };
+
+        const handleEdit = (book) => {
+          setFormState(book);
+          setEditingBookId(book.id);
+          setIsAddingOrEditing(true);
+        };
+
+        const handleDelete = async (id) => {
+          if (!user || !confirm("Delete this edition?")) return;
+          if (db) {
+            await deleteDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'books', id));
+          } else {
+            setBooks(prev => prev.filter(b => b.id !== id));
+            setIsAddingOrEditing(false);
+          }
+        };
+
+        const handleDownload = () => {
+          const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(books));
+          const downloadAnchorNode = document.createElement('a');
+          downloadAnchorNode.setAttribute("href", dataStr);
+          downloadAnchorNode.setAttribute("download", "chicshelf_backup.json");
+          document.body.appendChild(downloadAnchorNode);
+          downloadAnchorNode.click();
+          downloadAnchorNode.remove();
+        };
+
+        const handleUpload = (e) => {
+          const file = e.target.files[0];
+          if (!file) return;
+          const reader = new FileReader();
+          reader.onload = async (event) => {
+            try {
+              const imported = JSON.parse(event.target.result);
+              if (Array.isArray(imported)) {
+                const existingKeys = new Set(books.map(b => `${b.title.toLowerCase().trim()}|${b.author.toLowerCase().trim()}`));
+                const newBooks = imported.filter(b => {
+                  const key = `${b.title.toLowerCase().trim()}|${b.author.toLowerCase().trim()}`;
+                  return !existingKeys.has(key);
+                });
+
+                if (newBooks.length === 0) return;
+
+                if (db) {
+                    for (const b of newBooks) {
+                        const { id, ...cleanData } = b;
+                        const newDoc = doc(collection(db, 'artifacts', appId, 'users', user.uid, 'books'));
+                        await setDoc(newDoc, { ...cleanData, createdAt: Date.now() });
+                    }
+                } else {
+                    const uniqueNewBooks = newBooks.map(b => ({
+                      ...b, 
+                      id: Date.now().toString() + Math.random(), 
+                      createdAt: Date.now()
+                    }));
+                    setBooks(prev => [...uniqueNewBooks, ...prev]);
+                }
+              }
+            } catch (err) { console.error("Import failed", err); }
+          };
+          reader.readAsText(file);
+          e.target.value = '';
+        };
+
+        const handleSort = (key) => {
+          let direction = 'asc';
+          if (sortConfig.key === key && sortConfig.direction === 'asc') {
+            direction = 'desc';
+          }
+          setSortConfig({ key, direction });
+        };
+
+        const sortedBooks = useMemo(() => {
+          const sortable = [...books];
+          sortable.sort((a, b) => {
+            let aVal = a[sortConfig.key];
+            let bVal = b[sortConfig.key];
+
+            // Handle numeric strings like years
+            if (sortConfig.key === 'year' || sortConfig.key === 'stars') {
+              aVal = Number(aVal);
+              bVal = Number(bVal);
+            } else if (typeof aVal === 'string') {
+              aVal = aVal.toLowerCase();
+              bVal = bVal.toLowerCase();
+            }
+
+            if (aVal < bVal) return sortConfig.direction === 'asc' ? -1 : 1;
+            if (aVal > bVal) return sortConfig.direction === 'asc' ? 1 : -1;
+            return 0;
+          });
+          return sortable;
+        }, [books, sortConfig]);
+
+        const moveRanking = async (book, direction, yearGroup) => {
+          const group = books
+            .filter(b => b.year === yearGroup && (b.stars === 4 || b.stars === 5))
+            .sort((a, b) => (a.rankingOrder || 0) - (b.rankingOrder || 0));
+          
+          const idx = group.findIndex(b => b.id === book.id);
+          let targetId = null;
+          let targetOrder = null;
+          
+          if (direction === 'up' && idx > 0) {
+            targetId = group[idx - 1].id;
+            targetOrder = group[idx - 1].rankingOrder;
+          } else if (direction === 'down' && idx < group.length - 1) {
+            targetId = group[idx + 1].id;
+            targetOrder = group[idx + 1].rankingOrder;
+          }
+
+          if (targetId !== null) {
+            if (db) {
+                const currentOrder = book.rankingOrder;
+                await updateDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'books', book.id), { rankingOrder: targetOrder });
+                await updateDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'books', targetId), { rankingOrder: currentOrder });
+            } else {
+                setBooks(prev => prev.map(b => {
+                    if (b.id === book.id) return {...b, rankingOrder: targetOrder};
+                    if (b.id === targetId) return {...b, rankingOrder: book.rankingOrder};
+                    return b;
+                }));
+            }
+          }
+        };
+
+        const uniqueYears = useMemo(() => Array.from(new Set(books.map(b => b.year))).sort((a, b) => b - a), [books]);
+
+        return (
+          <div className={`min-h-screen transition-colors duration-500 ${theme.bg} ${theme.text} px-4 pb-12 pt-6 md:px-12 lg:px-24`}>
+            <header className={`mb-8 sticky top-0 ${theme.bg} z-50 pt-2`}>
+              <div className="flex justify-between items-center mb-6">
+                <h1 
+                  className="text-3xl sm:text-4xl md:text-8xl font-high-fashion font-bold tracking-tighter leading-none cursor-pointer mobile-header-text" 
+                  onClick={() => { setCurrentSection('library'); setIsAddingOrEditing(false); }}
+                >
+                  CHICSHELF
+                </h1>
+                <button onClick={() => { setIsAddingOrEditing(!isAddingOrEditing); if(!isAddingOrEditing) resetForm(); }} className={`px-4 py-2 border-2 ${theme.border} text-[9px] md:text-[10px] font-bold tracking-[0.2em] md:tracking-[0.3em] uppercase transition-all hover:invert ml-4 whitespace-nowrap`}>
+                  {isAddingOrEditing ? 'CLOSE' : 'NEW EDITION'}
+                </button>
+              </div>
+              <nav className={`border-y-2 ${theme.border} py-3 flex justify-center gap-4 md:gap-16 overflow-x-auto no-scrollbar`}>
+                {['library', 'list', 'cluster', 'ranking'].map((s) => (
+                  <button key={s} onClick={() => { setCurrentSection(s); setIsAddingOrEditing(false); }} className={`text-[9px] md:text-sm font-high-fashion tracking-[0.2em] uppercase transition-all whitespace-nowrap ${currentSection === s && !isAddingOrEditing ? 'underline underline-offset-8 italic scale-110' : 'opacity-40 hover:opacity-100'}`}>
+                    {s}
+                  </button>
+                ))}
+              </nav>
+            </header>
+
+            <main className="min-h-[60vh] relative">
+              {isAddingOrEditing ? (
+                <div className="max-w-2xl mx-auto py-8 animate-in">
+                  <h2 className="text-xl md:text-2xl font-high-fashion uppercase mb-12 text-center underline italic">{editingBookId ? 'Edit Edition' : 'New Edition'}</h2>
+                  <form onSubmit={handleSubmit} className="flex flex-col gap-8 px-2 md:px-0">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                      <div className="group">
+                        <label className="text-[10px] uppercase tracking-[0.2em] font-bold block mb-2 opacity-60">Title</label>
+                        <input type="text" required value={formState.title} onChange={e => setFormState({...formState, title: e.target.value})} className={`w-full bg-transparent border-b-2 ${theme.border} pb-2 focus:outline-none font-serif text-lg`} />
+                      </div>
+                      <div className="group">
+                        <label className="text-[10px] uppercase tracking-[0.2em] font-bold block mb-2 opacity-60">Author</label>
+                        <input type="text" required value={formState.author} onChange={e => setFormState({...formState, author: e.target.value})} className={`w-full bg-transparent border-b-2 ${theme.border} pb-2 focus:outline-none font-serif text-lg`} />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      <div>
+                        <label className="text-[10px] uppercase tracking-[0.2em] font-bold block mb-2 opacity-60">Month</label>
+                        <input type="text" placeholder="Jan" value={formState.month} onChange={e => setFormState({...formState, month: e.target.value})} className={`w-full bg-transparent border-b-2 ${theme.border} pb-2 focus:outline-none font-serif`} />
+                      </div>
+                      <div>
+                        <label className="text-[10px] uppercase tracking-[0.2em] font-bold block mb-2 opacity-60">Year</label>
+                        <input type="text" value={formState.year} onChange={e => setFormState({...formState, year: e.target.value})} className={`w-full bg-transparent border-b-2 ${theme.border} pb-2 focus:outline-none font-serif`} />
+                      </div>
+                      <div className="col-span-2">
+                        <label className="text-[10px] uppercase tracking-[0.2em] font-bold block mb-2 opacity-60">Genre</label>
+                        <input type="text" value={formState.genre} onChange={e => setFormState({...formState, genre: e.target.value})} className={`w-full bg-transparent border-b-2 ${theme.border} pb-2 focus:outline-none font-serif`} />
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap gap-12 items-end">
+                      <div className="flex-grow min-w-[200px]">
+                        <label className="text-[10px] uppercase tracking-[0.2em] font-bold block mb-2 opacity-60">Cover URL</label>
+                        <input type="url" value={formState.coverUrl} onChange={e => setFormState({...formState, coverUrl: e.target.value})} className={`w-full bg-transparent border-b-2 ${theme.border} pb-2 focus:outline-none font-serif text-xs md:text-sm`} />
+                      </div>
+                      <div>
+                        <label className="text-[10px] uppercase tracking-[0.2em] font-bold block mb-2 opacity-60">Rating</label>
+                        <StarRating rating={formState.stars} setRating={(s) => setFormState({...formState, stars: s})} />
+                      </div>
+                    </div>
+                    <div className="flex flex-col md:flex-row gap-4 mt-4">
+                        <button type="submit" className={`flex-grow py-5 text-[10px] md:text-xs tracking-[0.5em] font-bold uppercase transition-all ${theme.accent} hover:scale-[0.99] active:scale-95`}>
+                        {editingBookId ? 'UPDATE EDITION' : 'ADD TO COLLECTION'}
+                        </button>
+                        {editingBookId && (
+                            <button type="button" onClick={() => handleDelete(editingBookId)} className="py-5 px-6 border-2 border-red-500 text-red-500 text-[10px] font-bold uppercase hover:bg-red-500 hover:text-white transition-all">DELETE</button>
+                        )}
+                    </div>
+                  </form>
+                </div>
+              ) : (
+                <div className="animate-in">
+                  {currentSection === 'library' && (
+                    <div className="max-w-6xl mx-auto py-12 px-2">
+                      {books.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center py-24 md:py-32">
+                          <div className="w-48 h-48 md:w-64 md:h-64 mb-8 animate-float">
+                            <LucideIcon name="bookOpen" className="w-full h-full text-current" />
+                          </div>
+                          <p className="font-serif italic text-2xl md:text-4xl opacity-30 text-center px-4">The shelf is waiting for your story.</p>
+                          <button onClick={() => { setIsAddingOrEditing(true); resetForm(); }} className="mt-8 text-[10px] tracking-widest font-bold uppercase opacity-50 hover:opacity-100 underline underline-offset-8">Curate your first edition</button>
+                        </div>
+                      ) : (
+                        <>
+                          <div className="flex flex-wrap justify-center items-end gap-2 px-4">
+                            {[...books].sort((a,b) => (b.createdAt || 0) - (a.createdAt || 0)).map((book) => (
+                              <div key={book.id} onClick={() => handleEdit(book)} className="relative group cursor-pointer transition-all duration-300 hover:-translate-y-8 hover:z-10">
+                                <div className={`shadow-xl border-r-2 border-black/10 overflow-hidden ${theme.border} border-t border-l`}>
+                                  <img src={book.coverUrl} className="w-14 sm:w-20 md:w-32 h-40 sm:h-56 md:h-80 object-cover" />
+                                </div>
+                                <div className="absolute inset-0 bg-black/80 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-4 pointer-events-none">
+                                  <p className="text-[8px] md:text-[10px] text-white font-bold uppercase tracking-tight line-clamp-2">{book.title}</p>
+                                  <p className="text-[7px] md:text-[8px] text-white/70 italic font-serif mt-1">{book.author}</p>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                          <div className={`w-full h-6 mt-[-4px] border-t-4 border-x-4 ${theme.border} opacity-20 bg-black/10`}></div>
+                        </>
+                      )}
+                    </div>
+                  )}
+
+                  {currentSection === 'list' && (
+                    <div className="max-w-5xl mx-auto px-2">
+                      <div className="overflow-x-auto no-scrollbar mb-4 border-b-2 border-black/10">
+                        <table className="w-full text-left border-collapse min-w-[600px]">
+                          <thead>
+                            <tr className={`text-[9px] md:text-[10px] uppercase tracking-[0.3em] font-bold border-b-2 ${theme.border}`}>
+                              {[
+                                { key: 'title', label: 'Title' },
+                                { key: 'author', label: 'Author' },
+                                { key: 'year', label: 'Year' },
+                                { key: 'genre', label: 'Genre' },
+                                { key: 'stars', label: 'Rating' }
+                              ].map(col => (
+                                <th key={col.key} className="pb-4 cursor-pointer hover:opacity-60 transition-opacity" onClick={() => handleSort(col.key)}>
+                                  <div className="flex items-center gap-1">
+                                    {col.label}
+                                    <LucideIcon name="sortIcon" className={`opacity-40 ${sortConfig.key === col.key ? 'opacity-100' : ''}`} />
+                                  </div>
+                                </th>
+                              ))}
+                              <th className="pb-4 text-center">Edit</th>
+                            </tr>
+                          </thead>
+                          <tbody className="font-serif text-sm">
+                            {sortedBooks.map(book => (
+                              <tr key={book.id} className={`group border-b ${theme.border} hover:bg-black/5 transition-colors`}>
+                                <td className="py-4 font-bold uppercase tracking-tight pr-4">{book.title}</td>
+                                <td className="py-4 italic opacity-70 pr-4">{book.author}</td>
+                                <td className="py-4 pr-4">{book.year}</td>
+                                <td className="py-4 opacity-60 text-[10px] md:text-xs pr-4">{book.genre}</td>
+                                <td className="py-4 pr-4"><StarRating rating={book.stars} interactive={false} /></td>
+                                <td className="py-4 text-center">
+                                  <button onClick={() => handleEdit(book)} className="p-2 opacity-30 group-hover:opacity-100 hover:scale-125 transition-all inline-block">
+                                    <LucideIcon name="edit" />
+                                  </button>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                      <div className="flex justify-end gap-3 pb-8 pt-4 pr-2">
+                        <button onClick={handleDownload} title="Download Collection" className={`p-3 border-2 ${theme.border} rounded-full bg-transparent hover:invert transition-all flex items-center justify-center`}><LucideIcon name="download" /></button>
+                        <label title="Upload Collection" className={`p-3 border-2 ${theme.border} rounded-full bg-transparent hover:invert transition-all flex items-center justify-center cursor-pointer`}>
+                          <LucideIcon name="upload" />
+                          <input type="file" className="hidden" accept=".json" onChange={handleUpload} />
+                        </label>
+                      </div>
+                    </div>
+                  )}
+
+                  {currentSection === 'cluster' && (
+                    <div className="max-w-6xl mx-auto px-4">
+                      <div className="flex flex-col items-center gap-6 mb-12">
+                        <div className="flex items-center gap-4">
+                          <button onClick={() => setClusterBy('author')} className={`w-4 h-4 rounded-full border-2 ${theme.border} ${clusterBy === 'author' ? 'bg-black' : ''}`} title="By Author"></button>
+                          <span className="text-[10px] uppercase tracking-widest font-bold">Group By</span>
+                          <button onClick={() => setClusterBy('genre')} className={`w-4 h-4 rounded-full border-2 ${theme.border} ${clusterBy === 'genre' ? 'bg-black' : ''}`} title="By Genre"></button>
+                        </div>
+                        <select value={clusterFilterYear} onChange={e => setClusterFilterYear(e.target.value)} className="bg-transparent border-b border-black text-[10px] uppercase tracking-widest font-bold focus:outline-none p-1">
+                          <option value="">All Years</option>
+                          {uniqueYears.map(y => <option key={y} value={y}>{y}</option>)}
+                        </select>
+                      </div>
+                      <div className="flex flex-wrap gap-12 md:gap-24 justify-center py-8">
+                        {(() => {
+                          const grouped = books.filter(b => !clusterFilterYear || b.year === clusterFilterYear).reduce((acc, b) => {
+                            const key = clusterBy === 'author' ? b.author : (b.genre || 'Uncategorized');
+                            if (!acc[key]) acc[key] = [];
+                            acc[key].push(b);
+                            return acc;
+                          }, {});
+                          
+                          const counts = Object.values(grouped).map(arr => arr.length);
+                          const maxCount = Math.max(...counts, 1);
+                          const minSize = 100;
+                          const maxSize = 250;
+
+                          return Object.entries(grouped).map(([group, groupBooks]) => {
+                            const relativeSize = minSize + ((groupBooks.length / maxCount) * (maxSize - minSize));
+                            
+                            return (
+                              <div key={group} className="flex flex-col items-center max-w-[200px]">
+                                <div 
+                                  style={{ width: `${relativeSize}px`, height: `${relativeSize}px` }}
+                                  className={`rounded-full border-2 ${theme.border} flex items-center justify-center p-4 text-center group hover:scale-105 transition-all shadow-lg bg-black/5 mb-4`}
+                                >
+                                  <span className="font-high-fashion font-bold leading-none uppercase tracking-tighter text-[10px] md:text-xs">
+                                    {group}<br/><span className="opacity-40 italic font-serif text-[8px]">Vol. {groupBooks.length}</span>
+                                  </span>
+                                </div>
+                                <div className="flex flex-col items-center gap-1 text-center">
+                                  {groupBooks.map(b => (
+                                    <span key={b.id} className="text-[7px] uppercase tracking-wider opacity-40 hover:opacity-100 transition-opacity">
+                                      {b.title}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                            );
+                          });
+                        })()}
+                      </div>
+                    </div>
+                  )}
+
+                  {currentSection === 'ranking' && (
+                    <div className="max-w-3xl mx-auto py-8 px-4">
+                      {uniqueYears.length === 0 ? (
+                        <p className="text-center font-serif italic opacity-30 py-24">No top editions to rank yet.</p>
+                      ) : (
+                        uniqueYears.map(year => {
+                          const rankedBooks = books
+                            .filter(b => b.year === year && (b.stars === 4 || b.stars === 5))
+                            .sort((a, b) => (a.rankingOrder || 0) - (b.rankingOrder || 0));
+                          
+                          if (rankedBooks.length === 0) return null;
+
+                          return (
+                            <div key={year} className="mb-16">
+                              <h3 className="text-3xl md:text-4xl font-high-fashion italic border-b-2 border-black/10 pb-4 mb-8">{year}</h3>
+                              <div className="flex flex-col gap-6 md:gap-8">
+                                {rankedBooks.map((book, idx) => (
+                                  <div key={book.id} className="flex flex-col md:flex-row md:items-center gap-4 md:gap-6 group relative">
+                                    <div className="flex items-center gap-4">
+                                      <span className="text-3xl md:text-4xl font-high-fashion opacity-20 w-8 md:w-12">{idx + 1}</span>
+                                      <div className="flex-grow">
+                                        <h4 className="font-bold uppercase text-base md:text-lg leading-tight line-clamp-1">{book.title}</h4>
+                                        <p className="font-serif italic text-xs md:text-sm opacity-60">by {book.author}</p>
+                                      </div>
+                                    </div>
+                                    <div className="flex items-center justify-between md:justify-end gap-6 border-t md:border-none pt-2 md:pt-0 border-black/5">
+                                       <StarRating rating={book.stars} interactive={false} />
+                                       <div className="flex items-center gap-4 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
+                                          <button onClick={() => moveRanking(book, 'up', year)} className="p-1 hover:scale-125"><LucideIcon name="chevronUp" /></button>
+                                          <button onClick={() => moveRanking(book, 'down', year)} className="p-1 hover:scale-125"><LucideIcon name="chevronDown" /></button>
+                                       </div>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+            </main>
+
+            <footer className="mt-24 border-t-2 border-black/10 py-12 text-center opacity-40 hover:opacity-100 transition-opacity">
+              <div className="flex flex-wrap items-center justify-center gap-4 md:gap-6 mb-8 px-4">
+                {['runway', 'vogue', 'studio', 'dry'].map(id => (
+                  <button key={id} onClick={() => setCurrentTheme(id)} className={`text-[8px] md:text-[10px] tracking-[0.3em] font-bold ${currentTheme === id ? 'underline underline-offset-4' : ''}`}>
+                    {id.toUpperCase()}
+                  </button>
+                ))}
+              </div>
+              <p className="text-[10px] tracking-[0.4em] font-bold uppercase">CHICSHELF © 2026</p>
+            </footer>
+          </div>
+        );
+      };
+
+      const root = ReactDOM.createRoot(document.getElementById('root'));
+      root.render(<App />);
+    </script>
+  </body>
+</html> © 2026</p>
+            </footer>
+          </div>
+        );
+      };
+
+      const root = ReactDOM.createRoot(document.getElementById('root'));
+      root.render(<App />);
+    </script><!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CHICSHELF | Editorial Book Tracker</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@300;400;600&family=Bodoni+Moda:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    
+    <!-- React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    
+    <!-- Babel -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <!-- Firebase -->
+    <script type="module">
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+      import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+      import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+      
+      window.FirebaseSDK = { initializeApp, getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged, getFirestore, doc, setDoc, getDoc, collection, onSnapshot, updateDoc, deleteDoc };
+    </script>
+
+    <style>
+      body {
+        font-family: 'Montserrat', sans-serif;
+        -webkit-font-smoothing: antialiased;
+        overflow-x: hidden;
+      }
+      .font-serif { font-family: 'Playfair Display', serif; }
+      .font-high-fashion { font-family: 'Bodoni Moda', serif; }
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      
+      @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+      .animate-in { animation: fadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+      
+      @keyframes float {
+        0% { transform: translateY(0px); }
+        50% { transform: translateY(-10px); }
+        100% { transform: translateY(0px); }
+      }
+      .animate-float { animation: float 4s ease-in-out infinite; }
+
+      .star-rating { color: #eab308; }
+      .star-empty { color: #d1d5db; }
+      
+      @media (max-width: 640px) {
+        .mobile-header-text { font-size: 2.5rem; line-height: 1; }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+      const { useState, useEffect, useCallback, useMemo } = React;
+      const { initializeApp, getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged, getFirestore, doc, setDoc, getDoc, collection, onSnapshot, updateDoc, deleteDoc } = window.FirebaseSDK;
+
+      const THEME_CONFIG = {
+        runway: { bg: 'bg-[#d9e2d5]', text: 'text-[#2f3e2d]', accent: 'bg-[#5d6d53] text-white', border: 'border-[#2f3e2d]', cardBg: 'bg-[#e7eee4]' },
+        vogue: { bg: 'bg-[#ffffff]', text: 'text-[#000000]', accent: 'bg-[#ff0000] text-white', border: 'border-[#000000]', cardBg: 'bg-[#ffffff]' },
+        studio: { bg: 'bg-[#fff0f5]', text: 'text-[#4a0404]', accent: 'bg-[#800020] text-white', border: 'border-[#800020]', cardBg: 'bg-[#fffcfd]' },
+        dry: { bg: 'bg-[#f4e1d2]', text: 'text-[#7d4f50]', accent: 'bg-[#ac8e82] text-white', border: 'border-[#7d4f50]', cardBg: 'bg-[#faf3ed]' },
+      };
+
+      const PLACEHOLDER_COVERS = [
+        'https://images.unsplash.com/photo-1544947950-fa07a98d237f?auto=format&fit=crop&q=80&w=800',
+        'https://images.unsplash.com/photo-1589998059171-988d887df646?auto=format&fit=crop&q=80&w=800',
+        'https://images.unsplash.com/photo-1512820790803-83ca734da794?auto=format&fit=crop&q=80&w=800',
+      ];
+
+      const LucideIcon = ({ name, className = "" }) => {
+        const icons = {
+          download: <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>,
+          upload: <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>,
+          star: <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>,
+          chevronUp: <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="18 15 12 9 6 15"/></svg>,
+          chevronDown: <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"/></svg>,
+          edit: <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>,
+          bookOpen: <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" className="w-full h-full opacity-10"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>,
+          sortIcon: <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="7 15 12 20 17 15"/><polyline points="7 9 12 4 17 9"/></svg>
+        };
+        return <span className={className}>{icons[name] || null}</span>;
+      };
+
+      const StarRating = ({ rating, setRating, interactive = true }) => {
+        return (
+          <div className="flex gap-1">
+            {[1, 2, 3, 4, 5].map((s) => (
+              <button
+                key={s}
+                type="button"
+                onClick={() => interactive && setRating(s)}
+                className={`transition-all duration-200 ${s <= rating ? 'text-yellow-500 scale-110' : 'text-gray-300 opacity-40'} ${interactive ? 'hover:scale-125' : 'cursor-default'}`}
+              >
+                <LucideIcon name="star" />
+              </button>
+            ))}
+          </div>
+        );
+      };
+
+      const App = () => {
+        const [user, setUser] = useState(null);
+        const [books, setBooks] = useState([]);
+        const [currentTheme, setCurrentTheme] = useState('dry');
+        const [currentSection, setCurrentSection] = useState('library');
+        const [isAddingOrEditing, setIsAddingOrEditing] = useState(false);
+        const [editingBookId, setEditingBookId] = useState(null);
+        const [clusterBy, setClusterBy] = useState('author');
+        const [clusterFilterYear, setClusterFilterYear] = useState('');
+        const [sortConfig, setSortConfig] = useState({ key: 'createdAt', direction: 'desc' });
+
+        const [formState, setFormState] = useState({
+          title: '', author: '', month: '', year: new Date().getFullYear().toString(), genre: '', stars: 1, coverUrl: ''
+        });
+
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'chicshelf-standalone';
+        const firebaseConfigStr = typeof __firebase_config !== 'undefined' ? __firebase_config : null;
+        
+        let db = null;
+        let auth = null;
+
+        if (firebaseConfigStr) {
+          try {
+            const config = JSON.parse(firebaseConfigStr);
+            const app = initializeApp(config);
+            auth = getAuth(app);
+            db = getFirestore(app);
+          } catch(e) {
+            console.warn("Firebase failed to init.");
+          }
+        }
+
+        useEffect(() => {
+          if (!auth) {
+              setUser({ uid: 'local-user' });
+              return;
+          }
+          const initAuth = async () => {
+            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+              await signInWithCustomToken(auth, __initial_auth_token);
+            } else {
+              await signInAnonymously(auth);
+            }
+          };
+          initAuth();
+          const unsubscribe = onAuthStateChanged(auth, setUser);
+          return () => unsubscribe();
+        }, []);
+
+        useEffect(() => {
+          if (!user || !db) return;
+          const q = collection(db, 'artifacts', appId, 'users', user.uid, 'books');
+          const unsubscribe = onSnapshot(q, (snapshot) => {
+            const fetched = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            setBooks(fetched);
+          }, (err) => console.error("Firestore error:", err));
+          return () => unsubscribe();
+        }, [user]);
+
+        const theme = THEME_CONFIG[currentTheme] || THEME_CONFIG.dry;
+
+        const handleSubmit = async (e) => {
+          e.preventDefault();
+          if (!user || !formState.title || !formState.author) return;
+
+          const bookData = {
+            ...formState,
+            coverUrl: formState.coverUrl || PLACEHOLDER_COVERS[Math.floor(Math.random() * PLACEHOLDER_COVERS.length)],
+            updatedAt: Date.now(),
+            rankingOrder: formState.rankingOrder || Date.now()
+          };
+
+          if (db) {
+            if (editingBookId) {
+                await updateDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'books', editingBookId), bookData);
+            } else {
+                const newDoc = doc(collection(db, 'artifacts', appId, 'users', user.uid, 'books'));
+                await setDoc(newDoc, { ...bookData, createdAt: Date.now() });
+            }
+          } else {
+            if (editingBookId) {
+                setBooks(prev => prev.map(b => b.id === editingBookId ? {...b, ...bookData} : b));
+            } else {
+                setBooks(prev => [{...bookData, id: Date.now().toString() + Math.random(), createdAt: Date.now()}, ...prev]);
+            }
+          }
+
+          resetForm();
+          setIsAddingOrEditing(false);
+        };
+
+        const resetForm = () => {
+          setFormState({ title: '', author: '', month: '', year: new Date().getFullYear().toString(), genre: '', stars: 1, coverUrl: '' });
+          setEditingBookId(null);
+        };
+
+        const handleEdit = (book) => {
+          setFormState(book);
+          setEditingBookId(book.id);
+          setIsAddingOrEditing(true);
+        };
+
+        const handleDelete = async (id) => {
+          if (!user || !confirm("Delete this edition?")) return;
+          if (db) {
+            await deleteDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'books', id));
+          } else {
+            setBooks(prev => prev.filter(b => b.id !== id));
+            setIsAddingOrEditing(false);
+          }
+        };
+
+        const handleDownload = () => {
+          const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(books));
+          const downloadAnchorNode = document.createElement('a');
+          downloadAnchorNode.setAttribute("href", dataStr);
+          downloadAnchorNode.setAttribute("download", "chicshelf_backup.json");
+          document.body.appendChild(downloadAnchorNode);
+          downloadAnchorNode.click();
+          downloadAnchorNode.remove();
+        };
+
+        const handleUpload = (e) => {
+          const file = e.target.files[0];
+          if (!file) return;
+          const reader = new FileReader();
+          reader.onload = async (event) => {
+            try {
+              const imported = JSON.parse(event.target.result);
+              if (Array.isArray(imported)) {
+                const existingKeys = new Set(books.map(b => `${b.title.toLowerCase().trim()}|${b.author.toLowerCase().trim()}`));
+                const newBooks = imported.filter(b => {
+                  const key = `${b.title.toLowerCase().trim()}|${b.author.toLowerCase().trim()}`;
+                  return !existingKeys.has(key);
+                });
+
+                if (newBooks.length === 0) return;
+
+                if (db) {
+                    for (const b of newBooks) {
+                        const { id, ...cleanData } = b;
+                        const newDoc = doc(collection(db, 'artifacts', appId, 'users', user.uid, 'books'));
+                        await setDoc(newDoc, { ...cleanData, createdAt: Date.now() });
+                    }
+                } else {
+                    const uniqueNewBooks = newBooks.map(b => ({
+                      ...b, 
+                      id: Date.now().toString() + Math.random(), 
+                      createdAt: Date.now()
+                    }));
+                    setBooks(prev => [...uniqueNewBooks, ...prev]);
+                }
+              }
+            } catch (err) { console.error("Import failed", err); }
+          };
+          reader.readAsText(file);
+          e.target.value = '';
+        };
+
+        const handleSort = (key) => {
+          let direction = 'asc';
+          if (sortConfig.key === key && sortConfig.direction === 'asc') {
+            direction = 'desc';
+          }
+          setSortConfig({ key, direction });
+        };
+
+        const sortedBooks = useMemo(() => {
+          const sortable = [...books];
+          sortable.sort((a, b) => {
+            let aVal = a[sortConfig.key];
+            let bVal = b[sortConfig.key];
+
+            // Handle numeric strings like years
+            if (sortConfig.key === 'year' || sortConfig.key === 'stars') {
+              aVal = Number(aVal);
+              bVal = Number(bVal);
+            } else if (typeof aVal === 'string') {
+              aVal = aVal.toLowerCase();
+              bVal = bVal.toLowerCase();
+            }
+
+            if (aVal < bVal) return sortConfig.direction === 'asc' ? -1 : 1;
+            if (aVal > bVal) return sortConfig.direction === 'asc' ? 1 : -1;
+            return 0;
+          });
+          return sortable;
+        }, [books, sortConfig]);
+
+        const moveRanking = async (book, direction, yearGroup) => {
+          const group = books
+            .filter(b => b.year === yearGroup && (b.stars === 4 || b.stars === 5))
+            .sort((a, b) => (a.rankingOrder || 0) - (b.rankingOrder || 0));
+          
+          const idx = group.findIndex(b => b.id === book.id);
+          let targetId = null;
+          let targetOrder = null;
+          
+          if (direction === 'up' && idx > 0) {
+            targetId = group[idx - 1].id;
+            targetOrder = group[idx - 1].rankingOrder;
+          } else if (direction === 'down' && idx < group.length - 1) {
+            targetId = group[idx + 1].id;
+            targetOrder = group[idx + 1].rankingOrder;
+          }
+
+          if (targetId !== null) {
+            if (db) {
+                const currentOrder = book.rankingOrder;
+                await updateDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'books', book.id), { rankingOrder: targetOrder });
+                await updateDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'books', targetId), { rankingOrder: currentOrder });
+            } else {
+                setBooks(prev => prev.map(b => {
+                    if (b.id === book.id) return {...b, rankingOrder: targetOrder};
+                    if (b.id === targetId) return {...b, rankingOrder: book.rankingOrder};
+                    return b;
+                }));
+            }
+          }
+        };
+
+        const uniqueYears = useMemo(() => Array.from(new Set(books.map(b => b.year))).sort((a, b) => b - a), [books]);
+
+        return (
+          <div className={`min-h-screen transition-colors duration-500 ${theme.bg} ${theme.text} px-4 pb-12 pt-6 md:px-12 lg:px-24`}>
+            <header className={`mb-8 sticky top-0 ${theme.bg} z-50 pt-2`}>
+              <div className="flex justify-between items-center mb-6">
+                <h1 
+                  className="text-3xl sm:text-4xl md:text-8xl font-high-fashion font-bold tracking-tighter leading-none cursor-pointer mobile-header-text" 
+                  onClick={() => { setCurrentSection('library'); setIsAddingOrEditing(false); }}
+                >
+                  CHICSHELF
+                </h1>
+                <button onClick={() => { setIsAddingOrEditing(!isAddingOrEditing); if(!isAddingOrEditing) resetForm(); }} className={`px-4 py-2 border-2 ${theme.border} text-[9px] md:text-[10px] font-bold tracking-[0.2em] md:tracking-[0.3em] uppercase transition-all hover:invert ml-4 whitespace-nowrap`}>
+                  {isAddingOrEditing ? 'CLOSE' : 'NEW EDITION'}
+                </button>
+              </div>
+              <nav className={`border-y-2 ${theme.border} py-3 flex justify-center gap-4 md:gap-16 overflow-x-auto no-scrollbar`}>
+                {['library', 'list', 'cluster', 'ranking'].map((s) => (
+                  <button key={s} onClick={() => { setCurrentSection(s); setIsAddingOrEditing(false); }} className={`text-[9px] md:text-sm font-high-fashion tracking-[0.2em] uppercase transition-all whitespace-nowrap ${currentSection === s && !isAddingOrEditing ? 'underline underline-offset-8 italic scale-110' : 'opacity-40 hover:opacity-100'}`}>
+                    {s}
+                  </button>
+                ))}
+              </nav>
+            </header>
+
+            <main className="min-h-[60vh] relative">
+              {isAddingOrEditing ? (
+                <div className="max-w-2xl mx-auto py-8 animate-in">
+                  <h2 className="text-xl md:text-2xl font-high-fashion uppercase mb-12 text-center underline italic">{editingBookId ? 'Edit Edition' : 'New Edition'}</h2>
+                  <form onSubmit={handleSubmit} className="flex flex-col gap-8 px-2 md:px-0">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                      <div className="group">
+                        <label className="text-[10px] uppercase tracking-[0.2em] font-bold block mb-2 opacity-60">Title</label>
+                        <input type="text" required value={formState.title} onChange={e => setFormState({...formState, title: e.target.value})} className={`w-full bg-transparent border-b-2 ${theme.border} pb-2 focus:outline-none font-serif text-lg`} />
+                      </div>
+                      <div className="group">
+                        <label className="text-[10px] uppercase tracking-[0.2em] font-bold block mb-2 opacity-60">Author</label>
+                        <input type="text" required value={formState.author} onChange={e => setFormState({...formState, author: e.target.value})} className={`w-full bg-transparent border-b-2 ${theme.border} pb-2 focus:outline-none font-serif text-lg`} />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      <div>
+                        <label className="text-[10px] uppercase tracking-[0.2em] font-bold block mb-2 opacity-60">Month</label>
+                        <input type="text" placeholder="Jan" value={formState.month} onChange={e => setFormState({...formState, month: e.target.value})} className={`w-full bg-transparent border-b-2 ${theme.border} pb-2 focus:outline-none font-serif`} />
+                      </div>
+                      <div>
+                        <label className="text-[10px] uppercase tracking-[0.2em] font-bold block mb-2 opacity-60">Year</label>
+                        <input type="text" value={formState.year} onChange={e => setFormState({...formState, year: e.target.value})} className={`w-full bg-transparent border-b-2 ${theme.border} pb-2 focus:outline-none font-serif`} />
+                      </div>
+                      <div className="col-span-2">
+                        <label className="text-[10px] uppercase tracking-[0.2em] font-bold block mb-2 opacity-60">Genre</label>
+                        <input type="text" value={formState.genre} onChange={e => setFormState({...formState, genre: e.target.value})} className={`w-full bg-transparent border-b-2 ${theme.border} pb-2 focus:outline-none font-serif`} />
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap gap-12 items-end">
+                      <div className="flex-grow min-w-[200px]">
+                        <label className="text-[10px] uppercase tracking-[0.2em] font-bold block mb-2 opacity-60">Cover URL</label>
+                        <input type="url" value={formState.coverUrl} onChange={e => setFormState({...formState, coverUrl: e.target.value})} className={`w-full bg-transparent border-b-2 ${theme.border} pb-2 focus:outline-none font-serif text-xs md:text-sm`} />
+                      </div>
+                      <div>
+                        <label className="text-[10px] uppercase tracking-[0.2em] font-bold block mb-2 opacity-60">Rating</label>
+                        <StarRating rating={formState.stars} setRating={(s) => setFormState({...formState, stars: s})} />
+                      </div>
+                    </div>
+                    <div className="flex flex-col md:flex-row gap-4 mt-4">
+                        <button type="submit" className={`flex-grow py-5 text-[10px] md:text-xs tracking-[0.5em] font-bold uppercase transition-all ${theme.accent} hover:scale-[0.99] active:scale-95`}>
+                        {editingBookId ? 'UPDATE EDITION' : 'ADD TO COLLECTION'}
+                        </button>
+                        {editingBookId && (
+                            <button type="button" onClick={() => handleDelete(editingBookId)} className="py-5 px-6 border-2 border-red-500 text-red-500 text-[10px] font-bold uppercase hover:bg-red-500 hover:text-white transition-all">DELETE</button>
+                        )}
+                    </div>
+                  </form>
+                </div>
+              ) : (
+                <div className="animate-in">
+                  {currentSection === 'library' && (
+                    <div className="max-w-6xl mx-auto py-12 px-2">
+                      {books.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center py-24 md:py-32">
+                          <div className="w-48 h-48 md:w-64 md:h-64 mb-8 animate-float">
+                            <LucideIcon name="bookOpen" className="w-full h-full text-current" />
+                          </div>
+                          <p className="font-serif italic text-2xl md:text-4xl opacity-30 text-center px-4">The shelf is waiting for your story.</p>
+                          <button onClick={() => { setIsAddingOrEditing(true); resetForm(); }} className="mt-8 text-[10px] tracking-widest font-bold uppercase opacity-50 hover:opacity-100 underline underline-offset-8">Curate your first edition</button>
+                        </div>
+                      ) : (
+                        <>
+                          <div className="flex flex-wrap justify-center items-end gap-2 px-4">
+                            {[...books].sort((a,b) => (b.createdAt || 0) - (a.createdAt || 0)).map((book) => (
+                              <div key={book.id} onClick={() => handleEdit(book)} className="relative group cursor-pointer transition-all duration-300 hover:-translate-y-8 hover:z-10">
+                                <div className={`shadow-xl border-r-2 border-black/10 overflow-hidden ${theme.border} border-t border-l`}>
+                                  <img src={book.coverUrl} className="w-14 sm:w-20 md:w-32 h-40 sm:h-56 md:h-80 object-cover" />
+                                </div>
+                                <div className="absolute inset-0 bg-black/80 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-4 pointer-events-none">
+                                  <p className="text-[8px] md:text-[10px] text-white font-bold uppercase tracking-tight line-clamp-2">{book.title}</p>
+                                  <p className="text-[7px] md:text-[8px] text-white/70 italic font-serif mt-1">{book.author}</p>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                          <div className={`w-full h-6 mt-[-4px] border-t-4 border-x-4 ${theme.border} opacity-20 bg-black/10`}></div>
+                        </>
+                      )}
+                    </div>
+                  )}
+
+                  {currentSection === 'list' && (
+                    <div className="max-w-5xl mx-auto px-2">
+                      <div className="overflow-x-auto no-scrollbar mb-4 border-b-2 border-black/10">
+                        <table className="w-full text-left border-collapse min-w-[600px]">
+                          <thead>
+                            <tr className={`text-[9px] md:text-[10px] uppercase tracking-[0.3em] font-bold border-b-2 ${theme.border}`}>
+                              {[
+                                { key: 'title', label: 'Title' },
+                                { key: 'author', label: 'Author' },
+                                { key: 'year', label: 'Year' },
+                                { key: 'genre', label: 'Genre' },
+                                { key: 'stars', label: 'Rating' }
+                              ].map(col => (
+                                <th key={col.key} className="pb-4 cursor-pointer hover:opacity-60 transition-opacity" onClick={() => handleSort(col.key)}>
+                                  <div className="flex items-center gap-1">
+                                    {col.label}
+                                    <LucideIcon name="sortIcon" className={`opacity-40 ${sortConfig.key === col.key ? 'opacity-100' : ''}`} />
+                                  </div>
+                                </th>
+                              ))}
+                              <th className="pb-4 text-center">Edit</th>
+                            </tr>
+                          </thead>
+                          <tbody className="font-serif text-sm">
+                            {sortedBooks.map(book => (
+                              <tr key={book.id} className={`group border-b ${theme.border} hover:bg-black/5 transition-colors`}>
+                                <td className="py-4 font-bold uppercase tracking-tight pr-4">{book.title}</td>
+                                <td className="py-4 italic opacity-70 pr-4">{book.author}</td>
+                                <td className="py-4 pr-4">{book.year}</td>
+                                <td className="py-4 opacity-60 text-[10px] md:text-xs pr-4">{book.genre}</td>
+                                <td className="py-4 pr-4"><StarRating rating={book.stars} interactive={false} /></td>
+                                <td className="py-4 text-center">
+                                  <button onClick={() => handleEdit(book)} className="p-2 opacity-30 group-hover:opacity-100 hover:scale-125 transition-all inline-block">
+                                    <LucideIcon name="edit" />
+                                  </button>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                      <div className="flex justify-end gap-3 pb-8 pt-4 pr-2">
+                        <button onClick={handleDownload} title="Download Collection" className={`p-3 border-2 ${theme.border} rounded-full bg-transparent hover:invert transition-all flex items-center justify-center`}><LucideIcon name="download" /></button>
+                        <label title="Upload Collection" className={`p-3 border-2 ${theme.border} rounded-full bg-transparent hover:invert transition-all flex items-center justify-center cursor-pointer`}>
+                          <LucideIcon name="upload" />
+                          <input type="file" className="hidden" accept=".json" onChange={handleUpload} />
+                        </label>
+                      </div>
+                    </div>
+                  )}
+
+                  {currentSection === 'cluster' && (
+                    <div className="max-w-6xl mx-auto px-4">
+                      <div className="flex flex-col items-center gap-6 mb-12">
+                        <div className="flex items-center gap-4">
+                          <button onClick={() => setClusterBy('author')} className={`w-4 h-4 rounded-full border-2 ${theme.border} ${clusterBy === 'author' ? 'bg-black' : ''}`} title="By Author"></button>
+                          <span className="text-[10px] uppercase tracking-widest font-bold">Group By</span>
+                          <button onClick={() => setClusterBy('genre')} className={`w-4 h-4 rounded-full border-2 ${theme.border} ${clusterBy === 'genre' ? 'bg-black' : ''}`} title="By Genre"></button>
+                        </div>
+                        <select value={clusterFilterYear} onChange={e => setClusterFilterYear(e.target.value)} className="bg-transparent border-b border-black text-[10px] uppercase tracking-widest font-bold focus:outline-none p-1">
+                          <option value="">All Years</option>
+                          {uniqueYears.map(y => <option key={y} value={y}>{y}</option>)}
+                        </select>
+                      </div>
+                      <div className="flex flex-wrap gap-12 md:gap-24 justify-center py-8">
+                        {(() => {
+                          const grouped = books.filter(b => !clusterFilterYear || b.year === clusterFilterYear).reduce((acc, b) => {
+                            const key = clusterBy === 'author' ? b.author : (b.genre || 'Uncategorized');
+                            if (!acc[key]) acc[key] = [];
+                            acc[key].push(b);
+                            return acc;
+                          }, {});
+                          
+                          const counts = Object.values(grouped).map(arr => arr.length);
+                          const maxCount = Math.max(...counts, 1);
+                          const minSize = 100;
+                          const maxSize = 250;
+
+                          return Object.entries(grouped).map(([group, groupBooks]) => {
+                            const relativeSize = minSize + ((groupBooks.length / maxCount) * (maxSize - minSize));
+                            
+                            return (
+                              <div key={group} className="flex flex-col items-center max-w-[200px]">
+                                <div 
+                                  style={{ width: `${relativeSize}px`, height: `${relativeSize}px` }}
+                                  className={`rounded-full border-2 ${theme.border} flex items-center justify-center p-4 text-center group hover:scale-105 transition-all shadow-lg bg-black/5 mb-4`}
+                                >
+                                  <span className="font-high-fashion font-bold leading-none uppercase tracking-tighter text-[10px] md:text-xs">
+                                    {group}<br/><span className="opacity-40 italic font-serif text-[8px]">Vol. {groupBooks.length}</span>
+                                  </span>
+                                </div>
+                                <div className="flex flex-col items-center gap-1 text-center">
+                                  {groupBooks.map(b => (
+                                    <span key={b.id} className="text-[7px] uppercase tracking-wider opacity-40 hover:opacity-100 transition-opacity">
+                                      {b.title}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                            );
+                          });
+                        })()}
+                      </div>
+                    </div>
+                  )}
+
+                  {currentSection === 'ranking' && (
+                    <div className="max-w-3xl mx-auto py-8 px-4">
+                      {uniqueYears.length === 0 ? (
+                        <p className="text-center font-serif italic opacity-30 py-24">No top editions to rank yet.</p>
+                      ) : (
+                        uniqueYears.map(year => {
+                          const rankedBooks = books
+                            .filter(b => b.year === year && (b.stars === 4 || b.stars === 5))
+                            .sort((a, b) => (a.rankingOrder || 0) - (b.rankingOrder || 0));
+                          
+                          if (rankedBooks.length === 0) return null;
+
+                          return (
+                            <div key={year} className="mb-16">
+                              <h3 className="text-3xl md:text-4xl font-high-fashion italic border-b-2 border-black/10 pb-4 mb-8">{year}</h3>
+                              <div className="flex flex-col gap-6 md:gap-8">
+                                {rankedBooks.map((book, idx) => (
+                                  <div key={book.id} className="flex flex-col md:flex-row md:items-center gap-4 md:gap-6 group relative">
+                                    <div className="flex items-center gap-4">
+                                      <span className="text-3xl md:text-4xl font-high-fashion opacity-20 w-8 md:w-12">{idx + 1}</span>
+                                      <div className="flex-grow">
+                                        <h4 className="font-bold uppercase text-base md:text-lg leading-tight line-clamp-1">{book.title}</h4>
+                                        <p className="font-serif italic text-xs md:text-sm opacity-60">by {book.author}</p>
+                                      </div>
+                                    </div>
+                                    <div className="flex items-center justify-between md:justify-end gap-6 border-t md:border-none pt-2 md:pt-0 border-black/5">
+                                       <StarRating rating={book.stars} interactive={false} />
+                                       <div className="flex items-center gap-4 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
+                                          <button onClick={() => moveRanking(book, 'up', year)} className="p-1 hover:scale-125"><LucideIcon name="chevronUp" /></button>
+                                          <button onClick={() => moveRanking(book, 'down', year)} className="p-1 hover:scale-125"><LucideIcon name="chevronDown" /></button>
+                                       </div>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+            </main>
+
+            <footer className="mt-24 border-t-2 border-black/10 py-12 text-center opacity-40 hover:opacity-100 transition-opacity">
+              <div className="flex flex-wrap items-center justify-center gap-4 md:gap-6 mb-8 px-4">
+                {['runway', 'vogue', 'studio', 'dry'].map(id => (
+                  <button key={id} onClick={() => setCurrentTheme(id)} className={`text-[8px] md:text-[10px] tracking-[0.3em] font-bold ${currentTheme === id ? 'underline underline-offset-4' : ''}`}>
+                    {id.toUpperCase()}
+                  </button>
+                ))}
+              </div>
+              <p className="text-[10px] tracking-[0.4em] font-bold uppercase">CHICSHELF © 2026</p>
+            </footer>
+          </div>
+        );
+      };
+
+      const root = ReactDOM.createRoot(document.getElementById('root'));
+      root.render(<App />);
+    </script>
+  </body>
+</html>
+  </body>
+</html>offset-4' : ''}`}>
+                    {id.toUpperCase()}
+                  </button>
+                ))}
+              </div>
+              <p className="text-[10px] tracking-[0.4em] font-bold uppercase">CHICSHELF © 2026</p>
+            </footer>
+          </div>
+        );
+      };
+
+      const root = ReactDOM.createRoot(document.getElementById('root'));
+      root.render(<App />);
+    </script>
+  </body>
+</html>
