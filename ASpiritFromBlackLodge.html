@@ -1,0 +1,747 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>The Spirit from the Black Lodge</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
+    <style>
+        :root {
+            --rothko-red: #8a1c26;
+            --rothko-magenta: #5d1828;
+            --rothko-dark: #1a0b0e;
+            --rothko-orange: #b84b28;
+            --text-color: #f0f0f0;
+            --glass-bg: rgba(20, 5, 8, 0.6);
+            --glass-border: rgba(255, 200, 200, 0.1);
+            --highlight: #ffcc00;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', 'Helvetica Neue', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: var(--rothko-dark);
+            color: var(--text-color);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* --- Background Image ("The Spirit from the Black Lodge") --- */
+        .bg-image {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -2;
+            background-image: url('twinpeaksfirewalkwithme1992c.jpg');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            opacity: 0.6; /* Dimmed slightly for readability */
+            filter: contrast(1.1) saturate(1.2);
+            /* Fallback if image missing */
+            background-color: #4a0e16; 
+        }
+
+        /* --- Cinema Curtain Effect --- */
+        .curtain-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 100;
+            display: flex;
+            pointer-events: none;
+        }
+
+        .curtain-panel {
+            width: 50%;
+            height: 100%;
+            background: linear-gradient(90deg, #38080e 0%, #7e1e38 50%, #38080e 100%);
+            position: relative;
+            transition: transform 1.5s cubic-bezier(0.77, 0, 0.175, 1);
+            box-shadow: inset -10px 0 50px rgba(0,0,0,0.8);
+            background-image: repeating-linear-gradient(90deg, transparent 0, transparent 40px, rgba(0,0,0,0.3) 40px, rgba(0,0,0,0.3) 80px);
+        }
+
+        .curtain-left { transform: translateX(0); }
+        .curtain-right { transform: translateX(0); }
+
+        .curtain-container.open .curtain-left { transform: translateX(-100%); }
+        .curtain-container.open .curtain-right { transform: translateX(100%); }
+
+        /* --- App Container --- */
+        .app-container {
+            width: 90%;
+            max-width: 500px;
+            height: 85vh; /* Fixed height for mobile feel */
+            max-height: 800px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            box-shadow: 0 40px 80px rgba(0, 0, 0, 0.8);
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            border-radius: 8px;
+        }
+
+        /* --- Screens --- */
+        .screen {
+            display: none;
+            flex-direction: column;
+            flex: 1;
+            padding: 30px;
+            animation: fadeIn 0.8s ease forwards;
+            height: 100%;
+            justify-content: center;
+        }
+
+        .screen.active {
+            display: flex;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.98); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        /* --- Typography --- */
+        h1 {
+            font-weight: 300;
+            letter-spacing: 2px;
+            text-align: center;
+            font-size: 1.8rem;
+            text-transform: uppercase;
+            color: rgba(255,255,255,0.95);
+            margin-bottom: 10px;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.5);
+            line-height: 1.2;
+        }
+
+        h2 {
+            font-weight: 300;
+            text-align: center;
+            font-size: 1rem;
+            margin-bottom: 30px;
+            color: rgba(255,255,255,0.7);
+            letter-spacing: 1px;
+        }
+
+        /* --- Start Screen --- */
+        .start-content {
+            z-index: 101;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            width: 90%;
+            transition: opacity 0.5s ease;
+        }
+        
+        .start-content.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .start-btn {
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255,255,255,0.6);
+            color: white;
+            padding: 15px 40px;
+            font-size: 1.1rem;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 25px;
+            backdrop-filter: blur(5px);
+        }
+
+        .start-btn:hover {
+            background: rgba(255,255,255,0.1);
+            border-color: white;
+            box-shadow: 0 0 20px rgba(255,255,255,0.3);
+        }
+
+        /* --- Form Elements --- */
+        .input-group {
+            margin-bottom: 25px;
+        }
+
+        .input-label {
+            display: block;
+            margin-bottom: 10px;
+            font-size: 0.8rem;
+            letter-spacing: 2px;
+            color: rgba(255,255,255,0.6);
+            text-transform: uppercase;
+            text-align: center;
+        }
+
+        .options-container {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        input[type="radio"] {
+            display: none;
+        }
+
+        .option-btn {
+            padding: 12px 20px;
+            background: rgba(0,0,0,0.4);
+            border: 1px solid rgba(255,255,255,0.1);
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            flex: 1;
+            max-width: 140px;
+            font-size: 0.9rem;
+        }
+
+        input[type="radio"]:checked + .option-btn {
+            background: var(--rothko-orange);
+            border-color: var(--rothko-orange);
+            color: white;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+
+        /* --- Discover Button --- */
+        .discover-btn {
+            margin-top: 20px;
+            width: 100%;
+            padding: 18px;
+            background: linear-gradient(45deg, #7e1e38, #5d1828);
+            border: none;
+            color: white;
+            font-size: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            cursor: pointer;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+            border-radius: 4px;
+        }
+
+        /* --- Results Screen --- */
+        .results-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            flex-shrink: 0;
+        }
+
+        .header-title {
+            font-size: 0.85rem;
+            color: rgba(255,255,255,0.8);
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .shuffle-btn-header {
+            background: transparent;
+            border: 1px solid rgba(255,255,255,0.3);
+            color: rgba(255,255,255,0.9);
+            cursor: pointer;
+            font-size: 0.8rem;
+            padding: 5px 12px;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.3s;
+        }
+
+        .shuffle-btn-header:active {
+            transform: scale(0.95);
+            background: rgba(255,255,255,0.1);
+        }
+
+        .results-list {
+            list-style: none;
+            flex-grow: 1;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch; /* Smooth scrolling iOS */
+            padding-right: 5px;
+            margin-bottom: 15px;
+        }
+
+        /* Scrollbar styling */
+        .results-list::-webkit-scrollbar {
+            width: 3px;
+        }
+        .results-list::-webkit-scrollbar-thumb {
+            background: rgba(255,255,255,0.2);
+            border-radius: 2px;
+        }
+
+        .result-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 14px 10px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            cursor: pointer;
+            text-decoration: none;
+            color: rgba(255,255,255,0.9);
+        }
+        
+        .result-item:last-child {
+            border-bottom: none;
+        }
+
+        .result-item:hover, .result-item:active {
+            background: rgba(255,255,255,0.05);
+            color: white;
+        }
+
+        .item-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            overflow: hidden;
+        }
+
+        .item-rank {
+            font-size: 0.7rem;
+            color: rgba(255,255,255,0.4);
+            min-width: 20px;
+        }
+
+        .item-title {
+            font-size: 0.95rem;
+            font-weight: 400;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 200px;
+        }
+
+        /* Country Column */
+        .item-country {
+            font-size: 0.75rem;
+            color: rgba(255,255,255,0.5);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            text-align: right;
+            min-width: 60px;
+        }
+
+        /* Footer Buttons */
+        .footer-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: auto;
+            flex-shrink: 0;
+        }
+
+        .action-btn {
+            flex: 1;
+            padding: 15px;
+            background: rgba(0,0,0,0.3);
+            border: 1px solid rgba(255,255,255,0.15);
+            color: rgba(255,255,255,0.8);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .action-btn:active, .action-btn:hover {
+            background: rgba(255,255,255,0.1);
+            color: white;
+        }
+
+        .error-msg {
+            color: #ff8a8a;
+            text-align: center;
+            margin-top: 10px;
+            min-height: 20px;
+            font-size: 0.85rem;
+        }
+
+        /* --- Mobile Optimization --- */
+        @media (max-width: 600px) {
+            .app-container {
+                width: 100%;
+                height: 100vh;
+                max-height: none;
+                border-radius: 0;
+                border: none;
+            }
+
+            h1 { font-size: 1.5rem; }
+            .start-btn { width: 80%; }
+            
+            .item-title { max-width: 160px; }
+            
+            /* Better touch targets */
+            .result-item { padding: 18px 10px; }
+        }
+
+    </style>
+</head>
+<body>
+
+    <!-- Background Image -->
+    <div class="bg-image"></div>
+
+    <!-- Cinema Curtain -->
+    <div class="curtain-container" id="curtain">
+        <div class="curtain-panel curtain-left"></div>
+        <div class="curtain-panel curtain-right"></div>
+    </div>
+
+    <!-- Start Content -->
+    <div class="start-content" id="start-content">
+        <h1>The Spirit from the Black Lodge</h1>
+        <button class="start-btn" onclick="openCurtain()">Start</button>
+    </div>
+
+    <!-- Main App -->
+    <div class="app-container">
+        
+        <!-- SCREEN 1: FILTERS -->
+        <div id="selection-screen" class="screen">
+            <h1>The Spirit from the Black Lodge</h1>
+            <h2>Curate your title recommendation</h2>
+            
+            <!-- Origin Selection -->
+            <div class="input-group">
+                <span class="input-label">Origin</span>
+                <div class="options-container">
+                    <label>
+                        <input type="radio" name="origin" value="US" checked>
+                        <div class="option-btn">US</div>
+                    </label>
+                    <label>
+                        <input type="radio" name="origin" value="World">
+                        <div class="option-btn">World</div>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Type Selection -->
+            <div class="input-group">
+                <span class="input-label">Format</span>
+                <div class="options-container">
+                    <label>
+                        <input type="radio" name="type" value="Movie" checked>
+                        <div class="option-btn">Movies</div>
+                    </label>
+                    <label>
+                        <input type="radio" name="type" value="Series">
+                        <div class="option-btn">Series</div>
+                    </label>
+                </div>
+            </div>
+
+            <div class="error-msg" id="error-msg"></div>
+
+            <button class="discover-btn" onclick="discoverContent()">
+                <i class="fa-solid fa-wand-magic-sparkles" style="margin-right:10px;"></i>Discover
+            </button>
+        </div>
+
+        <!-- SCREEN 2: RESULTS -->
+        <div id="results-screen" class="screen">
+            <div class="results-header">
+                <span class="header-title" id="filter-summary">US Movies</span>
+                <button class="shuffle-btn-header" onclick="refreshResults()">
+                    <i class="fa-solid fa-shuffle"></i> Shuffle
+                </button>
+            </div>
+            
+            <ul class="results-list" id="results-list">
+                <!-- Results injected here -->
+            </ul>
+
+            <div class="footer-buttons">
+                <button class="action-btn" onclick="resetApp()">Back</button>
+                <button class="action-btn" onclick="refreshResults()">Shuffle</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- DATASET ---
+        const database = [
+            // US MOVIES
+            { title: "The Godfather", score: 9.2, type: "Movie", origin: "US", id: "tt0068646" },
+            { title: "The Shawshank Redemption", score: 9.3, type: "Movie", origin: "US", id: "tt0111161" },
+            { title: "The Dark Knight", score: 9.0, type: "Movie", origin: "US", id: "tt0468569" },
+            { title: "Pulp Fiction", score: 8.9, type: "Movie", origin: "US", id: "tt0110912" },
+            { title: "Forrest Gump", score: 8.8, type: "Movie", origin: "US", id: "tt0109830" },
+            { title: "Inception", score: 8.8, type: "Movie", origin: "US", id: "tt1375666" },
+            { title: "Fight Club", score: 8.8, type: "Movie", origin: "US", id: "tt0137523" },
+            { title: "The Matrix", score: 8.7, type: "Movie", origin: "US", id: "tt0133093" },
+            { title: "Goodfellas", score: 8.7, type: "Movie", origin: "US", id: "tt0099685" },
+            { title: "Interstellar", score: 8.7, type: "Movie", origin: "US", id: "tt0816692" },
+            { title: "Whiplash", score: 8.5, type: "Movie", origin: "US", id: "tt2582802" },
+            { title: "The Prestige", score: 8.5, type: "Movie", origin: "US", id: "tt0482571" },
+            { title: "The Departed", score: 8.5, type: "Movie", origin: "US", id: "tt0407887" },
+            { title: "Gladiator", score: 8.5, type: "Movie", origin: "US", id: "tt0172495" },
+            { title: "American History X", score: 8.5, type: "Movie", origin: "US", id: "tt0120586" },
+            { title: "The Lion King", score: 8.5, type: "Movie", origin: "US", id: "tt0110357" },
+            { title: "Back to the Future", score: 8.5, type: "Movie", origin: "US", id: "tt0088763" },
+            { title: "Psycho", score: 8.5, type: "Movie", origin: "US", id: "tt0054215" },
+            { title: "Casablanca", score: 8.5, type: "Movie", origin: "US", id: "tt0034583" },
+            { title: "Django Unchained", score: 8.4, type: "Movie", origin: "US", id: "tt1853728" },
+            { title: "Spider-Man: Into the Spider-Verse", score: 8.4, type: "Movie", origin: "US", id: "tt4633694" },
+            { title: "Coco", score: 8.4, type: "Movie", origin: "US", id: "tt2380307" },
+            { title: "Wall-E", score: 8.4, type: "Movie", origin: "US", id: "tt0910970" },
+            { title: "Joker", score: 8.4, type: "Movie", origin: "US", id: "tt7286456" },
+            { title: "Avengers: Endgame", score: 8.4, type: "Movie", origin: "US", id: "tt4154796" },
+            { title: "Oldboy (US Remake)", score: 7.5, type: "Movie", origin: "US", id: "tt14456616" }, 
+            { title: "Everything Everywhere All At Once", score: 7.8, type: "Movie", origin: "US", id: "tt6710474" },
+            { title: "Oppenheimer", score: 8.4, type: "Movie", origin: "US", id: "tt15398776" },
+            { title: "Arrival", score: 7.9, type: "Movie", origin: "US", id: "tt2543164" },
+            { title: "Her", score: 8.0, type: "Movie", origin: "US", id: "tt1798709" },
+            { title: "Blade Runner 2049", score: 8.0, type: "Movie", origin: "US", id: "tt1856101" },
+            { title: "La La Land", score: 8.0, type: "Movie", origin: "US", id: "tt3783958" },
+            { title: "Moonlight", score: 7.4, type: "Movie", origin: "US", id: "tt4975722" },
+            { title: "No Country for Old Men", score: 8.2, type: "Movie", origin: "US", id: "tt0477348" },
+            { title: "Eternal Sunshine", score: 8.3, type: "Movie", origin: "US", id: "tt0338013" },
+            { title: "There Will Be Blood", score: 8.2, type: "Movie", origin: "US", id: "tt0469494" },
+
+            // WORLD MOVIES
+            { title: "Parasite (South Korea)", score: 8.5, type: "Movie", origin: "World", id: "tt6751668" },
+            { title: "Spirited Away (Japan)", score: 8.6, type: "Movie", origin: "World", id: "tt0245429" },
+            { title: "City of God (Brazil)", score: 8.6, type: "Movie", origin: "World", id: "tt0317248" },
+            { title: "Seven Samurai (Japan)", score: 8.6, type: "Movie", origin: "World", id: "tt0047478" },
+            { title: "Life is Beautiful (Italy)", score: 8.6, type: "Movie", origin: "World", id: "tt0118799" },
+            { title: "The Intouchables (France)", score: 8.5, type: "Movie", origin: "World", id: "tt1675434" },
+            { title: "Oldboy (South Korea)", score: 8.3, type: "Movie", origin: "World", id: "tt0364569" },
+            { title: "Princess Mononoke (Japan)", score: 8.3, type: "Movie", origin: "World", id: "tt0119698" },
+            { title: "Das Boot (Germany)", score: 8.4, type: "Movie", origin: "World", id: "tt0082096" },
+            { title: "Amélie (France)", score: 8.3, type: "Movie", origin: "World", id: "tt0211915" },
+            { title: "Pan's Labyrinth (Spain)", score: 8.2, type: "Movie", origin: "World", id: "tt0457430" },
+            { title: "A Separation (Iran)", score: 8.3, type: "Movie", origin: "World", id: "tt1832382" },
+            { title: "The Hunt (Denmark)", score: 8.3, type: "Movie", origin: "World", id: "tt2106476" },
+            { title: "Your Name. (Japan)", score: 8.4, type: "Movie", origin: "World", id: "tt5311514" },
+            { title: "Memories of Murder (South Korea)", score: 8.1, type: "Movie", origin: "World", id: "tt0353969" },
+            { title: "Downfall (Germany)", score: 8.2, type: "Movie", origin: "World", id: "tt0363163" },
+            { title: "Cinema Paradiso (Italy)", score: 8.5, type: "Movie", origin: "World", id: "tt0095765" },
+            { title: "Grave of the Fireflies (Japan)", score: 8.5, type: "Movie", origin: "World", id: "tt0095327" },
+            { title: "Another Round (Denmark)", score: 7.7, type: "Movie", origin: "World", id: "tt10288566" },
+            { title: "Roma (Mexico)", score: 7.7, type: "Movie", origin: "World", id: "tt6155172" },
+            { title: "Train to Busan (South Korea)", score: 7.6, type: "Movie", origin: "World", id: "tt5700672" },
+            { title: "Portrait of a Lady on Fire (France)", score: 8.1, type: "Movie", origin: "World", id: "tt8613070" },
+            { title: "RRR (India)", score: 7.8, type: "Movie", origin: "World", id: "tt8178634" },
+            { title: "Anatomy of a Fall (France)", score: 7.7, type: "Movie", origin: "World", id: "tt17009710" },
+            { title: "Zone of Interest (UK/Poland)", score: 7.5, type: "Movie", origin: "World", id: "tt14439270" },
+            { title: "Godzilla Minus One (Japan)", score: 7.9, type: "Movie", origin: "World", id: "tt23289160" },
+            { title: "The Lives of Others (Germany)", score: 8.4, type: "Movie", origin: "World", id: "tt0405094" },
+            { title: "Incendies (Canada)", score: 8.3, type: "Movie", origin: "World", id: "tt1255953" },
+            { title: "Ran (Japan)", score: 8.2, type: "Movie", origin: "World", id: "tt0089881" },
+            { title: "Stalker (Russia)", score: 8.1, type: "Movie", origin: "World", id: "tt0079944" },
+            { title: "Come and See (Russia)", score: 8.4, type: "Movie", origin: "World", id: "tt0091251" },
+
+            // US SERIES
+            { title: "Breaking Bad", score: 9.5, type: "Series", origin: "US", id: "tt0903747" },
+            { title: "The Wire", score: 9.3, type: "Series", origin: "US", id: "tt0306414" },
+            { title: "The Sopranos", score: 9.2, type: "Series", origin: "US", id: "tt0141842" },
+            { title: "Game of Thrones", score: 9.2, type: "Series", origin: "US", id: "tt0944947" },
+            { title: "Rick and Morty", score: 9.1, type: "Series", origin: "US", id: "tt2861424" },
+            { title: "Avatar: The Last Airbender", score: 9.3, type: "Series", origin: "US", id: "tt0417299" },
+            { title: "True Detective", score: 8.9, type: "Series", origin: "US", id: "tt2356777" },
+            { title: "Friends", score: 8.9, type: "Series", origin: "US", id: "tt0108778" },
+            { title: "The Office (US)", score: 9.0, type: "Series", origin: "US", id: "tt0386676" },
+            { title: "Stranger Things", score: 8.7, type: "Series", origin: "US", id: "tt4574334" },
+            { title: "Better Call Saul", score: 9.0, type: "Series", origin: "US", id: "tt3032476" },
+            { title: "Succession", score: 8.8, type: "Series", origin: "US", id: "tt7660850" },
+            { title: "The Bear", score: 8.6, type: "Series", origin: "US", id: "tt14452776" },
+            { title: "Severance", score: 8.7, type: "Series", origin: "US", id: "tt11280740" },
+            { title: "Fargo", score: 8.9, type: "Series", origin: "US", id: "tt2802850" },
+            { title: "Band of Brothers", score: 9.4, type: "Series", origin: "US", id: "tt0185906" },
+            { title: "Chernobyl", score: 9.3, type: "Series", origin: "US", id: "tt8111088" },
+            { title: "Arcane", score: 9.0, type: "Series", origin: "US", id: "tt11126994" },
+            { title: "House of Cards", score: 8.6, type: "Series", origin: "US", id: "tt1856010" },
+            { title: "Westworld", score: 8.5, type: "Series", origin: "US", id: "tt0475784" },
+            { title: "Mad Men", score: 8.7, type: "Series", origin: "US", id: "tt0804503" },
+            { title: "Mindhunter", score: 8.6, type: "Series", origin: "US", id: "tt5290382" },
+            { title: "The Boys", score: 8.7, type: "Series", origin: "US", id: "tt1190634" },
+            { title: "Invincible", score: 8.7, type: "Series", origin: "US", id: "tt6741278" },
+            { title: "The Last of Us", score: 8.7, type: "Series", origin: "US", id: "tt3581920" },
+            { title: "Twin Peaks", score: 8.8, type: "Series", origin: "US", id: "tt0098936" },
+            { title: "The Mandalorian", score: 8.7, type: "Series", origin: "US", id: "tt8111088" },
+            { title: "BoJack Horseman", score: 8.8, type: "Series", origin: "US", id: "tt5218228" },
+            { title: "Batman: TAS", score: 9.0, type: "Series", origin: "US", id: "tt0103359" },
+            { title: "Seinfeld", score: 8.9, type: "Series", origin: "US", id: "tt0096697" },
+            { title: "Ted Lasso", score: 8.8, type: "Series", origin: "US", id: "tt10986410" },
+
+            // WORLD SERIES
+            { title: "Sherlock (UK)", score: 9.1, type: "Series", origin: "World", id: "tt1475582" },
+            { title: "Dark (Germany)", score: 8.7, type: "Series", origin: "World", id: "tt5753856" },
+            { title: "Black Mirror (UK)", score: 8.7, type: "Series", origin: "World", id: "tt2085059" },
+            { title: "Peaky Blinders (UK)", score: 8.8, type: "Series", origin: "World", id: "tt2442560" },
+            { title: "Money Heist (Spain)", score: 8.2, type: "Series", origin: "World", id: "tt6468322" },
+            { title: "Squid Game (South Korea)", score: 8.0, type: "Series", origin: "World", id: "tt10919420" },
+            { title: "Downton Abbey (UK)", score: 8.7, type: "Series", origin: "World", id: "tt1606375" },
+            { title: "The Crown (UK)", score: 8.6, type: "Series", origin: "World", id: "tt4786824" },
+            { title: "Fleabag (UK)", score: 8.7, type: "Series", origin: "World", id: "tt5687612" },
+            { title: "Attack on Titan (Japan)", score: 9.1, type: "Series", origin: "World", id: "tt2560140" },
+            { title: "Cowboy Bebop (Japan)", score: 8.9, type: "Series", origin: "World", id: "tt0213338" },
+            { title: "One Punch Man (Japan)", score: 8.7, type: "Series", origin: "World", id: "tt4508902" },
+            { title: "Death Note (Japan)", score: 8.9, type: "Series", origin: "World", id: "tt0877057" },
+            { title: "Luther (UK)", score: 8.4, type: "Series", origin: "World", id: "tt1474684" },
+            { title: "Gomorrah (Italy)", score: 8.7, type: "Series", origin: "World", id: "tt2049116" },
+            { title: "Narcos (Colombia/US)", score: 8.8, type: "Series", origin: "World", id: "tt2707408" },
+            { title: "Sacred Games (India)", score: 8.5, type: "Series", origin: "World", id: "tt6077448" },
+            { title: "Babylon Berlin (Germany)", score: 8.4, type: "Series", origin: "World", id: "tt4378376" },
+            { title: "Fauda (Israel)", score: 8.3, type: "Series", origin: "World", id: "tt4565380" },
+            { title: "Call My Agent! (France)", score: 8.3, type: "Series", origin: "World", id: "tt4277922" },
+            { title: "Lupin (France)", score: 7.5, type: "Series", origin: "World", id: "tt2531336" },
+            { title: "Alice in Borderland (Japan)", score: 7.7, type: "Series", origin: "World", id: "tt10795658" },
+            { title: "Doctor Who (UK)", score: 8.6, type: "Series", origin: "World", id: "tt0436992" },
+            { title: "Broadchurch (UK)", score: 8.4, type: "Series", origin: "World", id: "tt2234222" },
+            { title: "The Office (UK)", score: 8.5, type: "Series", origin: "World", id: "tt0290978" },
+            { title: "Planet Earth (UK)", score: 9.4, type: "Series", origin: "World", id: "tt0795176" },
+            { title: "Bluey (Australia)", score: 9.4, type: "Series", origin: "World", id: "tt7678620" },
+            { title: "Vinland Saga (Japan)", score: 8.8, type: "Series", origin: "World", id: "tt10233448" },
+            { title: "Fullmetal Alchemist: B (Japan)", score: 9.1, type: "Series", origin: "World", id: "tt0421359" },
+            { title: "Hunter x Hunter (Japan)", score: 9.0, type: "Series", origin: "World", id: "tt2098220" }
+        ];
+
+        // Global state
+        let currentOrigin = 'US';
+        let currentType = 'Movie';
+
+        // --- UI LOGIC ---
+
+        function openCurtain() {
+            document.getElementById('start-content').classList.add('hidden');
+            document.getElementById('curtain').classList.add('open');
+            setTimeout(() => {
+                document.getElementById('selection-screen').classList.add('active');
+            }, 800);
+        }
+
+        function discoverContent() {
+            const originRadio = document.querySelector('input[name="origin"]:checked');
+            const typeRadio = document.querySelector('input[name="type"]:checked');
+
+            if (!originRadio || !typeRadio) {
+                document.getElementById('error-msg').innerText = "Please select both options.";
+                return;
+            }
+
+            currentOrigin = originRadio.value;
+            currentType = typeRadio.value;
+
+            generateAndDisplayResults();
+
+            document.getElementById('selection-screen').classList.remove('active');
+            document.getElementById('results-screen').classList.add('active');
+        }
+
+        function refreshResults() {
+            const list = document.getElementById('results-list');
+            list.style.opacity = '0';
+            setTimeout(() => {
+                generateAndDisplayResults();
+                list.style.opacity = '1';
+            }, 200);
+        }
+
+        function getCountryFromTitle(item) {
+            if (item.origin === "US") return "USA";
+            
+            // Extract country from parens if present: "Parasite (South Korea)" -> "South Korea"
+            const match = item.title.match(/\(([^)]+)\)/);
+            if (match && match[1]) {
+                // Return just the content of parens
+                return match[1];
+            }
+            return "INTL";
+        }
+
+        function cleanTitle(title) {
+            // Remove country from title for cleaner display: "Parasite (South Korea)" -> "Parasite"
+            return title.replace(/\s*\([^)]+\)/, '');
+        }
+
+        function generateAndDisplayResults() {
+            // 1. Filter
+            const filtered = database.filter(item => 
+                item.origin === currentOrigin && 
+                item.type === currentType && 
+                item.score >= 7.4
+            );
+
+            // 2. Shuffle (Fisher-Yates) for randomness
+            for (let i = filtered.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [filtered[i], filtered[j]] = [filtered[j], filtered[i]];
+            }
+
+            // 3. Slice top 30 (User requested increase from 20 to 30)
+            const randomSelection = filtered.slice(0, 30);
+
+            // 4. Rank by Score
+            randomSelection.sort((a, b) => b.score - a.score);
+
+            // 5. Render
+            renderResults(randomSelection);
+        }
+
+        function renderResults(data) {
+            const list = document.getElementById('results-list');
+            const summary = document.getElementById('filter-summary');
+            
+            list.innerHTML = ''; 
+            summary.innerText = `${currentOrigin === 'US' ? 'US' : 'International'} ${currentType}s`;
+
+            if (data.length === 0) {
+                list.innerHTML = '<li style="padding:20px; text-align:center; color:rgba(255,255,255,0.5)">No results found matching your criteria.</li>';
+                return;
+            }
+
+            data.forEach((item, index) => {
+                const li = document.createElement('a');
+                li.className = 'result-item';
+                li.href = `https://www.imdb.com/title/${item.id}`;
+                li.target = "_blank";
+                li.title = "View on IMDB";
+                
+                const countryText = getCountryFromTitle(item);
+                const displayTitle = cleanTitle(item.title);
+
+                li.innerHTML = `
+                    <div class="item-info">
+                        <span class="item-rank">${String(index + 1).padStart(2, '0')}</span>
+                        <span class="item-title">${displayTitle}</span>
+                    </div>
+                    <div class="item-country">${countryText}</div>
+                `;
+                list.appendChild(li);
+            });
+        }
+
+        function resetApp() {
+            document.getElementById('results-screen').classList.remove('active');
+            document.getElementById('selection-screen').classList.add('active');
+        }
+    </script>
+</body>
+</html>
